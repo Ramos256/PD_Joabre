@@ -22,6 +22,10 @@
     .status.success { background-color: #d1fae5; color: #065f46; display: block; }
     .status.offline { background-color: #fef3c7; color: #92400e; display: block; }
     .badge-offline { background: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; display: none; }
+    
+    /* Estilos para pré-visualização da foto */
+    .photo-preview-container { margin-top: 8px; display: none; }
+    .photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #d1d5db; }
   </style>
 </head>
 <body>
@@ -40,7 +44,15 @@
       </div>
       <div class="form-group">
         <label for="operador">Operador</label>
-        <input type="text" id="operador" placeholder="Nome" required>
+        <select id="operador" required>
+          <option value="">Selecione o Operador...</option>
+          <!-- Dados oriundos da folha gasoleo_movimentos (coluna operador) -->
+          <option value="António Silva">António Silva</option>
+          <option value="Carlos Santos">Carlos Santos</option>
+          <option value="João Pereira">João Pereira</option>
+          <option value="Manuel Oliveira">Manuel Oliveira</option>
+          <option value="Rui Ferreira">Rui Ferreira</option>
+        </select>
       </div>
     </div>
 
@@ -48,6 +60,7 @@
       <label for="obraID">Obra (ObraID)</label>
       <select id="obraID" required>
         <option value="">Selecione a Obra...</option>
+        <!-- Dados oriundos do GestObra (colunas A e B: ObraID - Nome Obra) -->
         <option value="OB26_001">OB26_001 - Joabre</option>
         <option value="OB26_002">OB26_002 - Repsol Sines</option>
         <option value="OB26_003">OB26_003 - DIAM</option>
@@ -62,6 +75,7 @@
       <label for="equipamentoID">Equipamento / Viatura</label>
       <select id="equipamentoID" required>
         <option value="">Selecione o Equipamento...</option>
+        <!-- Dados oriundos do separador Equipamentos (Descrição e Matrícula_Série) -->
         <option value="EJ_C/C_01">EJ_C/C_01 - Master 7 lugares</option>
         <option value="EJ_C/C_02">EJ_C/C_02 - Jumpy (17-JT-68)</option>
         <option value="EJ_C/C_03">EJ_C/C_03 - Dyna Basculante (99-28-JX)</option>
@@ -72,12 +86,18 @@
 
     <div class="form-row">
       <div class="form-group">
-        <label for="centro">Centro de Custo</label>
-        <select id="centro" required>
-          <option value="EQU_Combustível">EQU_Combustível</option>
-          <option value="MOD_Interna">MOD_Interna</option>
-          <option value="EQU_Aluguer">EQU_Aluguer</option>
-          <option value="MAT_CC">MAT_CC</option>
+        <label for="material">Material Aplicado / Utilizado</label>
+        <select id="material" required>
+          <option value="">Selecione o Material...</option>
+          <!-- Dados oriundos do separador Materiais (coluna B: Descrição) -->
+          <option value="Tubo Corrugado DN110">Tubo Corrugado DN110</option>
+          <option value="Tubo HDPE DN90">Tubo HDPE DN90</option>
+          <option value="Brita 1">Brita 1</option>
+          <option value="Brita 2">Brita 2</option>
+          <option value="Toufão">Toufão</option>
+          <option value="Areia de Aterro">Areia de Aterro</option>
+          <option value="Cimento 32.5">Cimento 32.5</option>
+          <option value="Nenhum / Não aplicável">Nenhum / Não aplicável</option>
         </select>
       </div>
       <div class="form-group">
@@ -115,6 +135,14 @@
     </div>
 
     <div class="form-group">
+      <label for="foto">Fotografia da Obra / Comprovativo</label>
+      <input type="file" id="foto" accept="image/*" capture="environment">
+      <div id="photoPreviewContainer" class="photo-preview-container">
+        <img id="photoPreview" class="photo-preview" src="" alt="Pré-visualização">
+      </div>
+    </div>
+
+    <div class="form-group">
       <label for="obs">Observações / Anomalias</label>
       <textarea id="obs" rows="2" placeholder="Ocorrências da jornada..."></textarea>
     </div>
@@ -135,6 +163,28 @@
   const form = document.getElementById('parteDiariaForm');
   const statusMsg = document.getElementById('statusMsg');
   const offlineBadge = document.getElementById('offlineBadge');
+  const fotoInput = document.getElementById('foto');
+  const photoPreview = document.getElementById('photoPreview');
+  const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+
+  let currentBase64Image = "";
+
+  // Evento para pré-visualizar a foto e converter para Base64
+  fotoInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        currentBase64Image = evt.target.result;
+        photoPreview.src = currentBase64Image;
+        photoPreviewContainer.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      currentBase64Image = "";
+      photoPreviewContainer.style.display = 'none';
+    }
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
@@ -168,7 +218,7 @@
       ObraID: document.getElementById('obraID').value,
       EquipamentoID: document.getElementById('equipamentoID').value,
       Operador: document.getElementById('operador').value,
-      Centro: document.getElementById('centro').value,
+      Material: document.getElementById('material').value,
       Litros_Abast: parseFloat(document.getElementById('litros').value) || 0,
       Produção: prod,
       Unidade: document.getElementById('unidade').value,
@@ -176,6 +226,7 @@
       H_Final: hFin,
       'Total_H/Maq': totalH,
       RendimentoEq: parseFloat(rend.toFixed(2)),
+      Foto_Base64: currentBase64Image,
       'Obs.': document.getElementById('obs').value,
       StatusImportacao: 'Pendente'
     };
@@ -185,8 +236,7 @@
     } else {
       saveOffline(payload);
       showStatus("Guardado localmente sem rede. Sincronizará assim que houver sinal.", "offline");
-      form.reset();
-      document.getElementById('data').valueAsDate = new Date();
+      resetForm();
     }
   });
 
@@ -200,16 +250,14 @@
 
       if (response.ok) {
         showStatus("Parte diária inserida com sucesso!", "success");
-        form.reset();
-        document.getElementById('data').valueAsDate = new Date();
+        resetForm();
       } else {
         throw new Error('Erro no servidor');
       }
     } catch (err) {
       saveOffline(data);
       showStatus("Sem ligação ao servidor. Registado no telemóvel.", "offline");
-      form.reset();
-      document.getElementById('data').valueAsDate = new Date();
+      resetForm();
     }
   }
 
@@ -237,6 +285,13 @@
 
     localStorage.removeItem('partes_diarias_pendentes');
     showStatus("Todos os registos offline foram sincronizados!", "success");
+  }
+
+  function resetForm() {
+    form.reset();
+    currentBase64Image = "";
+    photoPreviewContainer.style.display = 'none';
+    document.getElementById('data').valueAsDate = new Date();
   }
 
   function showStatus(text, type) {
