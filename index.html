@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2563eb">
+  <title>Registo Parte Diária - Frota & Obras</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background-color: #f3f4f6; margin: 0; padding: 12px; color: #1f2937; }
+    .card { background: white; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #111827; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: #2563eb; }
+    button { width: 100%; background-color: #2563eb; color: white; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+    .status { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+    .status.success { background-color: #d1fae5; color: #065f46; display: block; }
+    .status.offline { background-color: #fef3c7; color: #92400e; display: block; }
+    .badge-offline { background: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>
+    Parte Diária de Obra
+    <span id="offlineBadge" class="badge-offline">Offline</span>
+  </h2>
+
+  <form id="parteDiariaForm">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="data">Data</label>
+        <input type="date" id="data" required>
+      </div>
+      <div class="form-group">
+        <label for="operador">Operador</label>
+        <input type="text" id="operador" placeholder="Nome" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="obraID">Obra (ObraID)</label>
+      <select id="obraID" required>
+        <option value="">Selecione a Obra...</option>
+        <option value="OB26_001">OB26_001 - Joabre</option>
+        <option value="OB26_002">OB26_002 - Repsol Sines</option>
+        <option value="OB26_003">OB26_003 - DIAM</option>
+        <option value="OB26_004">OB26_004 - Soc Agrícola Nogueira</option>
+        <option value="OB26_006">OB26_006 - Estádio do Braga</option>
+        <option value="OB26_007">OB26_007 - ETA Taipas</option>
+        <option value="OB26_042">OB26_042 - APDL</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="equipamentoID">Equipamento / Viatura</label>
+      <select id="equipamentoID" required>
+        <option value="">Selecione o Equipamento...</option>
+        <option value="EJ_C/C_01">EJ_C/C_01 - Master 7 lugares</option>
+        <option value="EJ_C/C_02">EJ_C/C_02 - Jumpy (17-JT-68)</option>
+        <option value="EJ_C/C_03">EJ_C/C_03 - Dyna Basculante (99-28-JX)</option>
+        <option value="EJ_C/C_05">EJ_C/C_05 - Toyota Hillux (52-IZ-78)</option>
+        <option value="EJ_COM_01">EJ_COM_01 - ATLAS XRHS 396</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="centro">Centro de Custo</label>
+        <select id="centro" required>
+          <option value="EQU_Combustível">EQU_Combustível</option>
+          <option value="MOD_Interna">MOD_Interna</option>
+          <option value="EQU_Aluguer">EQU_Aluguer</option>
+          <option value="MAT_CC">MAT_CC</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="litros">Litros Abast.</label>
+        <input type="number" id="litros" step="0.1" value="0">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="hInicial">Horómetro Inicial</label>
+        <input type="number" id="hInicial" step="0.1" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label for="hFinal">Horómetro Final</label>
+        <input type="number" id="hFinal" step="0.1" placeholder="0">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="producao">Produção Executada</label>
+        <input type="number" id="producao" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label for="unidade">Unidade</label>
+        <select id="unidade">
+          <option value="m">ml</option>
+          <option value="m2">m2</option>
+          <option value="m3">m3</option>
+          <option value="un">un</option>
+          <option value="kg">kg</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="obs">Observações / Anomalias</label>
+      <textarea id="obs" rows="2" placeholder="Ocorrências da jornada..."></textarea>
+    </div>
+
+    <button type="submit" id="submitBtn">Guardar Parte Diária</button>
+  </form>
+
+  <div id="statusMsg" class="status"></div>
+</div>
+
+<script>
+  // SUBSTITUA PELA URL GERADA PELO POWER AUTOMATE (HTTP POST)
+  const WEBHOOK_URL = "https://prod-xx.westeurope.logic.azure.com:443/workflows/...";
+
+  // Preencher a data atual por omissão
+  document.getElementById('data').valueAsDate = new Date();
+
+  const form = document.getElementById('parteDiariaForm');
+  const statusMsg = document.getElementById('statusMsg');
+  const offlineBadge = document.getElementById('offlineBadge');
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+
+  function updateOnlineStatus() {
+    if (navigator.onLine) {
+      offlineBadge.style.display = 'none';
+      syncOfflineData();
+    } else {
+      offlineBadge.style.display = 'inline-block';
+    }
+  }
+
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const hIni = parseFloat(document.getElementById('hInicial').value) || 0;
+    const hFin = parseFloat(document.getElementById('hFinal').value) || 0;
+    const totalH = hFin >= hIni ? (hFin - hIni) : 0;
+    const prod = parseFloat(document.getElementById('producao').value) || 0;
+    const rend = totalH > 0 ? (prod / totalH) : 0;
+
+    // Estrutura EXATA compatível com a tabela ParteDiaria do cc_bd_v1.xlsx
+    const payload = {
+      Data: document.getElementById('data').value,
+      ObraID: document.getElementById('obraID').value,
+      EquipamentoID: document.getElementById('equipamentoID').value,
+      Operador: document.getElementById('operador').value,
+      Centro: document.getElementById('centro').value,
+      Litros_Abast: parseFloat(document.getElementById('litros').value) || 0,
+      Produção: prod,
+      Unidade: document.getElementById('unidade').value,
+      H_Inicial: hIni,
+      H_Final: hFin,
+      'Total_H/Maq': totalH,
+      RendimentoEq: parseFloat(rend.toFixed(2)),
+      'Obs.': document.getElementById('obs').value,
+      StatusImportacao: 'Pendente'
+    };
+
+    if (navigator.onLine) {
+      await sendData(payload);
+    } else {
+      saveOffline(payload);
+      showStatus("Guardado localmente sem rede. Sincronizará assim que houver sinal.", "offline");
+      form.reset();
+      document.getElementById('data').valueAsDate = new Date();
+    }
+  });
+
+  async function sendData(data) {
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (response.ok) {
+        showStatus("Parte diária inserida com sucesso!", "success");
+        form.reset();
+        document.getElementById('data').valueAsDate = new Date();
+      } else {
+        throw new Error('Erro no servidor');
+      }
+    } catch (err) {
+      saveOffline(data);
+      showStatus("Sem ligação ao servidor. Registado no telemóvel.", "offline");
+      form.reset();
+      document.getElementById('data').valueAsDate = new Date();
+    }
+  }
+
+  function saveOffline(data) {
+    const pendentes = JSON.parse(localStorage.getItem('partes_diarias_pendentes') || '[]');
+    pendentes.push(data);
+    localStorage.setItem('partes_diarias_pendentes', JSON.stringify(pendentes));
+  }
+
+  async function syncOfflineData() {
+    const pendentes = JSON.parse(localStorage.getItem('partes_diarias_pendentes') || '[]');
+    if (pendentes.length === 0) return;
+
+    for (let i = 0; i < pendentes.length; i++) {
+      try {
+        await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendentes[i])
+        });
+      } catch (err) {
+        return;
+      }
+    }
+
+    localStorage.removeItem('partes_diarias_pendentes');
+    showStatus("Todos os registos offline foram sincronizados!", "success");
+  }
+
+  function showStatus(text, type) {
+    statusMsg.textContent = text;
+    statusMsg.className = `status ${type}`;
+    setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+  }
+</script>
+
+</body>
+</html>
