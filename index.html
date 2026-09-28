@@ -22,8 +22,6 @@
     .status.success { background-color: #d1fae5; color: #065f46; display: block; }
     .status.offline { background-color: #fef3c7; color: #92400e; display: block; }
     .badge-offline { background: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; display: none; }
-    
-    /* Estilos para pré-visualização da foto */
     .photo-preview-container { margin-top: 8px; display: none; }
     .photo-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #d1d5db; }
   </style>
@@ -45,13 +43,7 @@
       <div class="form-group">
         <label for="operador">Operador</label>
         <select id="operador" required>
-          <option value="">Selecione o Operador...</option>
-          <!-- Dados oriundos da folha Gasoleo_Movimentos (coluna G: Operador) -->
-          <option value="António Silva">António Silva</option>
-          <option value="Carlos Santos">Carlos Santos</option>
-          <option value="João Pereira">João Pereira</option>
-          <option value="Manuel Oliveira">Manuel Oliveira</option>
-          <option value="Rui Ferreira">Rui Ferreira</option>
+          <option value="">A carregar...</option>
         </select>
       </div>
     </div>
@@ -59,28 +51,14 @@
     <div class="form-group">
       <label for="obraID">Obra (ObraID)</label>
       <select id="obraID" required>
-        <option value="">Selecione a Obra...</option>
-        <!-- Dados oriundos do GestObra (colunas A e B: ObraID - Nome Obra) -->
-        <option value="OB26_001">OB26_001 - Joabre</option>
-        <option value="OB26_002">OB26_002 - Repsol Sines</option>
-        <option value="OB26_003">OB26_003 - DIAM</option>
-        <option value="OB26_004">OB26_004 - Soc Agrícola Nogueira</option>
-        <option value="OB26_006">OB26_006 - Estádio do Braga</option>
-        <option value="OB26_007">OB26_007 - ETA Taipas</option>
-        <option value="OB26_042">OB26_042 - APDL</option>
+        <option value="">A carregar...</option>
       </select>
     </div>
 
     <div class="form-group">
       <label for="equipamentoID">Equipamento / Viatura</label>
       <select id="equipamentoID" required>
-        <option value="">Selecione o Equipamento...</option>
-        <!-- Dados oriundos do separador Equipamentos (Descrição e Matrícula_Série) -->
-        <option value="EJ_C/C_01">EJ_C/C_01 - Master 7 lugares</option>
-        <option value="EJ_C/C_02">EJ_C/C_02 - Jumpy (17-JT-68)</option>
-        <option value="EJ_C/C_03">EJ_C/C_03 - Dyna Basculante (99-28-JX)</option>
-        <option value="EJ_C/C_05">EJ_C/C_05 - Toyota Hillux (52-IZ-78)</option>
-        <option value="EJ_COM_01">EJ_COM_01 - ATLAS XRHS 396</option>
+        <option value="">A carregar...</option>
       </select>
     </div>
 
@@ -88,16 +66,7 @@
       <div class="form-group">
         <label for="material">Material Aplicado / Utilizado</label>
         <select id="material" required>
-          <option value="">Selecione o Material...</option>
-          <!-- Dados oriundos do separador Materiais (coluna B: Descrição) -->
-          <option value="Tubo Corrugado DN110">Tubo Corrugado DN110</option>
-          <option value="Tubo HDPE DN90">Tubo HDPE DN90</option>
-          <option value="Brita 1">Brita 1</option>
-          <option value="Brita 2">Brita 2</option>
-          <option value="Toufão">Toufão</option>
-          <option value="Areia de Aterro">Areia de Aterro</option>
-          <option value="Cimento 32.5">Cimento 32.5</option>
-          <option value="Nenhum / Não aplicável">Nenhum / Não aplicável</option>
+          <option value="">A carregar...</option>
         </select>
       </div>
       <div class="form-group">
@@ -154,10 +123,10 @@
 </div>
 
 <script>
-  // SUBSTITUA PELA URL GERADA PELO POWER AUTOMATE (HTTP POST)
-  const WEBHOOK_URL = "https://prod-xx.westeurope.logic.azure.com:443/workflows/...";
+  // Webhooks do Power Automate
+  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbw2TF75v3qMZ4R4udRTxA09wkR32ty8oEZiAc1gMIhHymveeAMX0Q3E5d5nNLo4HdiBqg/exec"; // Para guardar dados
+  const WEBHOOK_GET_LISTS_URL = "https://script.google.com/macros/s/AKfycbw2TF75v3qMZ4R4udRTxA09wkR32ty8oEZiAc1gMIhHymveeAMX0Q3E5d5nNLo4HdiBqg/exec"; // Para carregar listas do Excel
 
-  // Preencher a data atual por omissão
   document.getElementById('data').valueAsDate = new Date();
 
   const form = document.getElementById('parteDiariaForm');
@@ -169,7 +138,6 @@
 
   let currentBase64Image = "";
 
-  // Evento para pré-visualizar a foto e converter para Base64
   fotoInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
@@ -185,6 +153,91 @@
       photoPreviewContainer.style.display = 'none';
     }
   });
+
+  // Função para carregar as listas dinâmicas do Excel via Power Automate
+  async function loadDropdownData() {
+    try {
+      const res = await fetch(WEBHOOK_GET_LISTS_URL);
+      if (!res.ok) throw new Error("Erro ao obter dados");
+      const data = await res.json();
+
+      // Guardar localmente para caso o telemóvel fique offline mais tarde
+      localStorage.setItem('cached_dropdowns', JSON.stringify(data));
+      populateSelects(data);
+    } catch (err) {
+      // Se estiver offline ou falhar, tenta ler do cache local
+      const cached = localStorage.getItem('cached_dropdowns');
+      if (cached) {
+        populateSelects(JSON.parse(cached));
+      } else {
+        showStatus("Não foi possível carregar as listas do servidor.", "offline");
+      }
+    }
+  }
+
+  function populateSelects(data) {
+    // 1. Operadores (coluna G do separador Gasoleo_Movimentos)
+    fillSelect('operador', data.operadores, 'Operador', 'Operador', 'Selecione o Operador...');
+    
+    // 2. Obras (colunas A e B do GestObra)
+    fillSelectObra('obraID', data.obras, 'Selecione a Obra...');
+    
+    // 3. Equipamentos (coluna Descrição e Matrícula_Série do separador Equipamentos)
+    fillSelectEquipamento('equipamentoID', data.equipamentos, 'Selecione o Equipamento...');
+    
+    // 4. Materiais (coluna B do separador Materiais)
+    fillSelect('material', data.materiais, 'Descrição', 'Descrição', 'Selecione o Material...');
+  }
+
+  function fillSelect(elementId, items, valueKey, textKey, defaultText) {
+    const select = document.getElementById(elementId);
+    select.innerHTML = `<option value="">${defaultText}</option>`;
+    if (!items) return;
+    
+    // Remover duplicados
+    const uniqueItems = [...new Set(items.map(item => item[valueKey]))].filter(Boolean);
+    uniqueItems.forEach(val => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val;
+      select.appendChild(opt);
+    });
+  }
+
+  function fillSelectObra(elementId, items, defaultText) {
+    const select = document.getElementById(elementId);
+    select.innerHTML = `<option value="">${defaultText}</option>`;
+    if (!items) return;
+
+    items.forEach(item => {
+      const id = item.ObraID || item.ID || '';
+      const nome = item.Nome || item.Obra || item.Descricao || '';
+      if (id) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = nome ? `${id} - ${nome}` : id;
+        select.appendChild(opt);
+      }
+    });
+  }
+
+  function fillSelectEquipamento(elementId, items, defaultText) {
+    const select = document.getElementById(elementId);
+    select.innerHTML = `<option value="">${defaultText}</option>`;
+    if (!items) return;
+
+    items.forEach(item => {
+      const desc = item.Descrição || item.Descricao || '';
+      const mat = item.Matrícula_Série || item.Matricula || '';
+      const val = item.EquipamentoID || desc || mat;
+      if (val) {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = mat ? `${desc} (${mat})` : desc;
+        select.appendChild(opt);
+      }
+    });
+  }
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js');
@@ -203,6 +256,9 @@
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
+  // Carregar as listas assim que a página é aberta
+  loadDropdownData();
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -212,7 +268,6 @@
     const prod = parseFloat(document.getElementById('producao').value) || 0;
     const rend = totalH > 0 ? (prod / totalH) : 0;
 
-    // Estrutura EXATA compatível com a tabela ParteDiaria do cc_bd_v1.xlsx
     const payload = {
       Data: document.getElementById('data').value,
       ObraID: document.getElementById('obraID').value,
@@ -242,7 +297,7 @@
 
   async function sendData(data) {
     try {
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(WEBHOOK_POST_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -273,7 +328,7 @@
 
     for (let i = 0; i < pendentes.length; i++) {
       try {
-        await fetch(WEBHOOK_URL, {
+        await fetch(WEBHOOK_POST_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(pendentes[i])
