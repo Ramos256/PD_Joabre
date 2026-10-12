@@ -211,7 +211,7 @@
 
     items.forEach(item => {
       const id = item.ObraID || item.ID || '';
-      const nome = item.Nome || item.Obra || item.Descricao || '';
+      const nome = item.NomeObra || item.Nome || item.Obra || item.Descricao || '';
       if (id) {
         const opt = document.createElement('option');
         opt.value = id;
