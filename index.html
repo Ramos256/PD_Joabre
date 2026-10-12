@@ -189,57 +189,58 @@
     fillSelect('material', data.materiais, 'Descrição', 'Descrição', 'Selecione o Material...');
   }
 
-  function fillSelect(elementId, items, valueKey, textKey, defaultText) {
-    const select = document.getElementById(elementId);
-    select.innerHTML = `<option value="">${defaultText}</option>`;
-    if (!items) return;
-    
-    // Remover duplicados
-    const uniqueItems = [...new Set(items.map(item => item[valueKey]))].filter(Boolean);
-    uniqueItems.forEach(val => {
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = val;
-      select.appendChild(opt);
-    });
-  }
-
 function fillSelect(elementId, items, valueKey, textKey, defaultText) {
   const select = document.getElementById(elementId);
 
-  select.innerHTML = "";
-
-  const primeiraOpcao = document.createElement("option");
-  primeiraOpcao.value = "";
-  primeiraOpcao.textContent = defaultText;
-  select.appendChild(primeiraOpcao);
+  select.innerHTML = `<option value="">${defaultText}</option>`;
 
   if (!Array.isArray(items)) {
     console.error("Lista inválida:", elementId, items);
     return;
   }
 
-  const valores = items
-    .map(item => {
-      if (typeof item === "string" || typeof item === "number") {
-        return String(item);
-      }
+  // Aceitar tanto textos simples como objetos
+  const valores = items.map(item => {
+    if (typeof item === 'string' || typeof item === 'number') {
+      return String(item).trim();
+    }
 
-      if (item && typeof item === "object") {
-        return item[valueKey] ?? item[textKey] ?? "";
-      }
+    if (item && typeof item === 'object') {
+      return String(item[valueKey] ?? item[textKey] ?? '').trim();
+    }
 
-      return "";
-    })
-    .filter(valor => String(valor).trim() !== "");
-
-  [...new Set(valores)].forEach(valor => {
-    const opcao = document.createElement("option");
-    opcao.value = valor;
-    opcao.textContent = valor;
-    select.appendChild(opcao);
+    return '';
   });
+
+  // Remover valores vazios e duplicados
+  const uniqueItems = [...new Set(valores)].filter(Boolean);
+
+  uniqueItems.forEach(val => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    select.appendChild(opt);
+  });
+
+  console.log(elementId + ': ' + uniqueItems.length + ' opções carregadas');
 }
+
+  function fillSelectObra(elementId, items, defaultText) {
+    const select = document.getElementById(elementId);
+    select.innerHTML = `<option value="">${defaultText}</option>`;
+    if (!items) return;
+
+    items.forEach(item => {
+      const id = item.ObraID || item.ID || '';
+      const nome = item.NomeObra || item.Nome || item.Obra || item.Descricao || '';
+      if (id) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = nome ? `${id} - ${nome}` : id;
+        select.appendChild(opt);
+      }
+    });
+  }
 
   function fillSelectEquipamento(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
