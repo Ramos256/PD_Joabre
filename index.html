@@ -204,22 +204,42 @@
     });
   }
 
-  function fillSelectObra(elementId, items, defaultText) {
-    const select = document.getElementById(elementId);
-    select.innerHTML = `<option value="">${defaultText}</option>`;
-    if (!items) return;
+function fillSelect(elementId, items, valueKey, textKey, defaultText) {
+  const select = document.getElementById(elementId);
 
-    items.forEach(item => {
-      const id = item.ObraID || item.ID || '';
-      const nome = item.NomeObra || item.Nome || item.Obra || item.Descricao || '';
-      if (id) {
-        const opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = nome ? `${id} - ${nome}` : id;
-        select.appendChild(opt);
-      }
-    });
+  select.innerHTML = "";
+
+  const primeiraOpcao = document.createElement("option");
+  primeiraOpcao.value = "";
+  primeiraOpcao.textContent = defaultText;
+  select.appendChild(primeiraOpcao);
+
+  if (!Array.isArray(items)) {
+    console.error("Lista inválida:", elementId, items);
+    return;
   }
+
+  const valores = items
+    .map(item => {
+      if (typeof item === "string" || typeof item === "number") {
+        return String(item);
+      }
+
+      if (item && typeof item === "object") {
+        return item[valueKey] ?? item[textKey] ?? "";
+      }
+
+      return "";
+    })
+    .filter(valor => String(valor).trim() !== "");
+
+  [...new Set(valores)].forEach(valor => {
+    const opcao = document.createElement("option");
+    opcao.value = valor;
+    opcao.textContent = valor;
+    select.appendChild(opcao);
+  });
+}
 
   function fillSelectEquipamento(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
