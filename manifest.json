@@ -1,18 +1,17 @@
 {
-  "name": "Registo de Frota e Combustível",
-  "short_name": "Combustível",
+"name": "Registo de Frota e Combustível",
+"short_name": "JOABRE",
 "start_url": "./index.html",
-"scope": "./",
+"scope": "/PD_Joabre/",
 "display": "standalone",
-  "scope": "/PD_Joabre/",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+"background_color": "#ffffff",
+"theme_color": "#12304A",
 "icons": [
-  {
-    "src": "./icon_joabre.svg",
-    "sizes": "any",
-    "type": "image/svg+xml",
-    "purpose": "any"
-  }
+{
+"src": "./icon_joabre.svg",
+"sizes": "any",
+"type": "image/svg+xml",
+"purpose": "any"
+}
 ]
 }
