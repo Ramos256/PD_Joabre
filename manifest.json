@@ -9,7 +9,7 @@
   "theme_color": "#2563eb",
 "icons": [
   {
-    "src": "./icon-joabre.svg",
+    "src": "./icon_joabre.svg",
     "sizes": "any",
     "type": "image/svg+xml",
     "purpose": "any"
