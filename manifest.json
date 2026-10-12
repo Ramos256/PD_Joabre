@@ -1,8 +1,9 @@
 {
   "name": "Registo de Frota e Combustível",
   "short_name": "Combustível",
-  "start_url": "/PD_Joabre/",
-  "display": "standalone",
+"start_url": "./index.html",
+"scope": "./",
+"display": "standalone",
   "scope": "/PD_Joabre/",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
