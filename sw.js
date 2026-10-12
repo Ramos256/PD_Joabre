@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frota-v1';
+const CACHE_NAME = 'frota-v2';
 
 const ASSETS = [
   '/',
