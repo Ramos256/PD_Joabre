@@ -5,7 +5,7 @@
   "scope": "/PD_Joabre/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#12304A",
+  "theme_color": "#2563eb",
   "icons": [
     {
       "src": "./icon_joabre.svg",
