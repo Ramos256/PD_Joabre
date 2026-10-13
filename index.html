@@ -15,11 +15,11 @@
     body { background-color: #f3f4f6; margin: 0; padding: 12px 12px 60px 12px; color: #1f2937; }
     .card { background: white; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 40px; }
     h2 { margin-top: 0; color: #111827; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
-    .form-row { display: flex; gap: 10px; }
-    .form-row .form-group { flex: 1; }
+    .form-row { display: flex; gap: 8px; }
+    .form-row .form-group { flex: 1; min-width: 0; }
     .form-group { margin-bottom: 14px; }
-    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
-    input, select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; outline: none; background: #fff; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; background: #fff; }
     input:focus, select:focus, textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
     button { width: 100%; background-color: #2563eb; color: white; border: none; padding: 16px; font-size: 1.05rem; font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     button:active { background-color: #1d4ed8; }
@@ -67,19 +67,23 @@
       </select>
     </div>
 
-    <!-- 1. Litros Abast. e Km / Horas Máq. -->
+    <!-- 3 Campos Divididos no mesmo espaço: Litros, Km/Horas, Horas Parag. -->
     <div class="form-row">
       <div class="form-group">
         <label for="litros">Litros Abast.</label>
         <input type="number" id="litros" step="0.1" value="0">
       </div>
       <div class="form-group">
-        <label for="kmHoras">Km / Horas Máq.</label>
+        <label for="kmHoras">Km/Horas</label>
         <input type="number" id="kmHoras" step="0.1" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label for="horasParag">Horas Parag.</label>
+        <input type="number" id="horasParag" step="0.1" placeholder="0">
       </div>
     </div>
 
-    <!-- 2. Material Aplicado (50%) + Quant. Utilz. ao lado -->
+    <!-- Material Aplicado (50%) + Quant. Utilz. -->
     <div class="form-row">
       <div class="form-group" style="flex: 2;">
         <label for="material">Material Aplicado / Utilizado</label>
@@ -93,7 +97,7 @@
       </div>
     </div>
 
-    <!-- 3. Produção Executada + Unidade -->
+    <!-- Produção Executada + Unidade -->
     <div class="form-row">
       <div class="form-group">
         <label for="producao">Produção Executada</label>
@@ -133,8 +137,8 @@
 </div>
 
 <script>
-  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbzRYIDTZC3WVhuhkxvo7P9AeDMyiVM5EuUwKI0tZQjF1HGFdrsIgykUTcWHgIEZ2pLQYw/exec";
-  const WEBHOOK_GET_LISTS_URL = "https://script.google.com/macros/s/AKfycbzRYIDTZC3WVhuhkxvo7P9AeDMyiVM5EuUwKI0tZQjF1HGFdrsIgykUTcWHgIEZ2pLQYw/exec";
+  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbw5kVuss0N008xMbpD860ht1A0mtK_XPgvtWApu8nV0rIvetS5-OeMLecD4M0H_emFKxg/exec";
+  const WEBHOOK_GET_LISTS_URL = "https://script.google.com/macros/s/AKfycbw5kVuss0N008xMbpD860ht1A0mtK_XPgvtWApu8nV0rIvetS5-OeMLecD4M0H_emFKxg/exec";
 
   document.getElementById('data').valueAsDate = new Date();
 
@@ -266,6 +270,7 @@
       EquipamentoID: document.getElementById('equipamentoID').value,
       Litros_Abast: parseFloat(document.getElementById('litros').value) || 0,
       Km_Horas: parseFloat(document.getElementById('kmHoras').value) || 0,
+      Horas_Parag: parseFloat(document.getElementById('horasParag').value) || 0,
       Material: document.getElementById('material').value,
       Quant_Utilizada: parseFloat(document.getElementById('quantUtilz').value) || 0,
       Produção: parseFloat(document.getElementById('producao').value) || 0,
