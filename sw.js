@@ -1,4 +1,4 @@
-const CACHE_NAME = 'frota-v2';
+const CACHE_NAME = 'frota-v3';
 
 const ASSETS = [
   '/PD_Joabre/',
