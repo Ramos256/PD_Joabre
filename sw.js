@@ -1,5 +1,4 @@
-
-const CACHE_NAME = "frota-v3";
+const CACHE_NAME = "joabre-pd-v4";
 
 const ASSETS = [
   "/PD_Joabre/",
@@ -8,6 +7,9 @@ const ASSETS = [
   "/PD_Joabre/icon_joabre.svg"
 ];
 
+/**
+ * Instalação: guarda os ficheiros essenciais.
+ */
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -17,6 +19,9 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
+/**
+ * Ativação: elimina as versões antigas da cache.
+ */
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(cacheNames =>
@@ -25,45 +30,78 @@ self.addEventListener("activate", event => {
           .filter(name => name !== CACHE_NAME)
           .map(name => caches.delete(name))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-
-  self.clients.claim();
 });
 
+/**
+ * Pedidos de rede:
+ * - Não interceta POST nem outros métodos que não sejam GET.
+ * - Não guarda respostas do Google Apps Script.
+ * - Para os restantes pedidos, tenta a rede primeiro.
+ * - Se a rede falhar, utiliza a cache.
+ */
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const request = event.request;
 
-  const url = new URL(event.request.url);
+  if (request.method !== "GET") {
+    return;
+  }
 
-  // Não guardar respostas do Apps Script na cache da aplicação.
-  if (url.hostname === "script.google.com" ||
-      url.hostname === "script.googleusercontent.com") {
+  const url = new URL(request.url);
+
+  // Não intercetar pedidos a outros domínios.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // A aplicação tem de estar dentro do âmbito JOABRE.
+  if (!url.pathname.startsWith("/PD_Joabre/")) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
-        if (response && response.ok &&
-            url.origin === self.location.origin) {
+        if (response && response.ok && response.type === "basic") {
           const copia = response.clone();
 
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, copia);
-          });
+          event.waitUntil(
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(request, copia))
+          );
         }
 
         return response;
       })
-      .catch(() => caches.match(event.request).then(cached => {
-        if (cached) return cached;
+      .catch(async () => {
+        const cached = await caches.match(request);
 
-        if (event.request.mode === "navigate") {
-          return caches.match("/PD_Joabre/index.html");
+        if (cached) {
+          return cached;
         }
 
-        return Response.error();
-      }))
+        // Se não houver rede, apresenta o formulário guardado.
+        if (request.mode === "navigate") {
+          const pagina = await caches.match(
+            "/PD_Joabre/index.html"
+          );
+
+          if (pagina) {
+            return pagina;
+          }
+        }
+
+        return new Response(
+          "Sem ligação e sem ficheiro disponível na cache.",
+          {
+            status: 503,
+            statusText: "Offline",
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8"
+            }
+          }
+        );
+      })
   );
 });
