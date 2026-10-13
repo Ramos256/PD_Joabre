@@ -67,7 +67,7 @@
       </select>
     </div>
 
-    <!-- 3 Campos Divididos no mesmo espaço: Litros, Km/Horas, Horas Parag. -->
+    <!-- 3 Campos Divididos no mesmo espaço -->
     <div class="form-row">
       <div class="form-group">
         <label for="litros">Litros Abast.</label>
@@ -83,7 +83,7 @@
       </div>
     </div>
 
-    <!-- Material Aplicado (50%) + Quant. Utilz. -->
+    <!-- Material Aplicado + Quant. Utilz. -->
     <div class="form-row">
       <div class="form-group" style="flex: 2;">
         <label for="material">Material Aplicado / Utilizado</label>
@@ -124,7 +124,7 @@
       </div>
     </div>
 
-    <!-- Observações / Anomalias -->
+    <!-- Observações -->
     <div class="form-group">
       <label for="obs">Observações / Anomalias</label>
       <textarea id="obs" rows="2" placeholder="Ocorrências da jornada..."></textarea>
@@ -137,8 +137,7 @@
 </div>
 
 <script>
-  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbyZlPyjVSQIiNr17TnXH4TkjhfMl1rnGGVq5uM_wklwdhCCo8ZXYlLTfT4vdK32PX2wyg/exec";
-  const WEBHOOK_GET_LISTS_URL = https://script.google.com/macros/s/AKfycbyZlPyjVSQIiNr17TnXH4TkjhfMl1rnGGVq5uM_wklwdhCCo8ZXYlLTfT4vdK32PX2wyg/exec";
+  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbymbEMHtReJUhBLmHq0puWsrDnR6IM_mtqkmMz-3tqe-vIRkIadyNaNdGQNi33_SZHk5Q/exec";
 
   document.getElementById('data').valueAsDate = new Date();
 
@@ -169,7 +168,7 @@
 
   async function loadDropdownData() {
     try {
-      const res = await fetch(WEBHOOK_GET_LISTS_URL);
+      const res = await fetch(WEBHOOK_URL);
       if (!res.ok) throw new Error("Erro ao obter dados");
       const data = await res.json();
       localStorage.setItem('cached_dropdowns', JSON.stringify(data));
@@ -179,7 +178,8 @@
       if (cached) {
         populateSelects(JSON.parse(cached));
       } else {
-        showStatus("Não foi possível carregar as listas do servidor.", "offline");
+        // Fallback caso falhe
+        populateSelects({ operadores: [], obras: [], equipamentos: [], materiais: [] });
       }
     }
   }
@@ -194,28 +194,22 @@
   function fillSelect(elementId, items, valueKey, textKey, defaultText) {
     const select = document.getElementById(elementId);
     select.innerHTML = `<option value="">${defaultText}</option>`;
-
     if (!Array.isArray(items)) return;
 
-    const valores = items.map(item => {
-      if (typeof item === 'string' || typeof item === 'number') return String(item).trim();
-      if (item && typeof item === 'object') return String(item[valueKey] ?? item[textKey] ?? '').trim();
-      return '';
-    });
-
-    const uniqueItems = [...new Set(valores)].filter(Boolean);
-    uniqueItems.forEach(val => {
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = val;
-      select.appendChild(opt);
+    items.forEach(val => {
+      if (val) {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        select.appendChild(opt);
+      }
     });
   }
 
   function fillSelectObra(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.innerHTML = `<option value="">${defaultText}</option>`;
-    if (!items) return;
+    if (!Array.isArray(items)) return;
 
     items.forEach(item => {
       const id = item.ObraID || item.ID || '';
@@ -232,11 +226,11 @@
   function fillSelectEquipamento(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.innerHTML = `<option value="">${defaultText}</option>`;
-    if (!items) return;
+    if (!Array.isArray(items)) return;
 
     items.forEach(item => {
-      const desc = item.Descrição || item.Descricao || '';
-      const mat = item.Matrícula_Série || item.Matricula || '';
+      const desc = item.NomeEquipamento || item.Descrição || item.Descricao || '';
+      const mat = item.Matricula_Seguro || item.Matricula || '';
       const val = item.EquipamentoID || desc || mat;
       if (val) {
         const opt = document.createElement('option');
@@ -266,6 +260,7 @@
 
     const payload = {
       Data: document.getElementById('data').value,
+      Operador: document.getElementById('operador').value,
       ObraID: document.getElementById('obraID').value,
       EquipamentoID: document.getElementById('equipamentoID').value,
       Litros_Abast: parseFloat(document.getElementById('litros').value) || 0,
@@ -291,7 +286,7 @@
 
   async function sendData(data) {
     try {
-      const response = await fetch(WEBHOOK_POST_URL, {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(data)
@@ -322,7 +317,7 @@
 
     for (let i = 0; i < pendentes.length; i++) {
       try {
-        await fetch(WEBHOOK_POST_URL, {
+        await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(pendentes[i])
