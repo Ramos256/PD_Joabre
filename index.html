@@ -137,9 +137,19 @@
 </div>
 
 <script>
-  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbymbEMHtReJUhBLmHq0puWsrDnR6IM_mtqkmMz-3tqe-vIRkIadyNaNdGQNi33_SZHk5Q/exec";
+  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxaI-2e0_tv7cXHfQSWlxzIOI9ek8j1P1znemLclPr-vEq59Qym4Y-vZLyAF8h89Go2AQ/exec";
 
-  document.getElementById('data').valueAsDate = new Date();
+  function definirDataHoje() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+
+  document.getElementById('data').value =
+    `${ano}-${mes}-${dia}`;
+}
+
+definirDataHoje();
 
   const form = document.getElementById('parteDiariaForm');
   const statusMsg = document.getElementById('statusMsg');
@@ -335,7 +345,17 @@
     form.reset();
     currentBase64Image = "";
     photoPreviewContainer.style.display = 'none';
-    document.getElementById('data').valueAsDate = new Date();
+    function definirDataHoje() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+
+  document.getElementById('data').value =
+    `${ano}-${mes}-${dia}`;
+}
+
+definirDataHoje();
   }
 
   function showStatus(text, type) {
