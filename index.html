@@ -6,15 +6,9 @@
   <meta name="theme-color" content="#2563eb">
   <title>Registo Parte Diária - Frota & Obras</title>
   
-  <!-- Links para o Ícone no Telemóvel -->
   <link rel="icon" type="image/svg+xml" href="icon_joabre.svg">
   <link rel="apple-touch-icon" href="icon_joabre.svg">
   <link rel="manifest" href="manifest.json">
-
-  <style>
-    /* ... (mantenha todo o seu estilo CSS atual aqui) ... */
-  </style>
-</head>
 
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -73,30 +67,33 @@
       </select>
     </div>
 
+    <!-- 1. Litros Abast. e Km / Horas Máq. -->
     <div class="form-row">
       <div class="form-group">
+        <label for="litros">Litros Abast.</label>
+        <input type="number" id="litros" step="0.1" value="0">
+      </div>
+      <div class="form-group">
+        <label for="kmHoras">Km / Horas Máq.</label>
+        <input type="number" id="kmHoras" step="0.1" placeholder="0">
+      </div>
+    </div>
+
+    <!-- 2. Material Aplicado (50%) + Quant. Utilz. ao lado -->
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
         <label for="material">Material Aplicado / Utilizado</label>
         <select id="material">
           <option value="">Selecione o Material (Opcional)...</option>
         </select>
       </div>
-      <div class="form-group">
-        <label for="litros">Litros Abast.</label>
-        <input type="number" id="litros" step="0.1" value="0">
+      <div class="form-group" style="flex: 1;">
+        <label for="quantUtilz">Quant. Utilz.</label>
+        <input type="number" id="quantUtilz" step="0.01" placeholder="0">
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="hInicial">Horómetro Inicial</label>
-        <input type="number" id="hInicial" step="0.1" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label for="hFinal">Horómetro Final</label>
-        <input type="number" id="hFinal" step="0.1" placeholder="0">
-      </div>
-    </div>
-
+    <!-- 3. Produção Executada + Unidade -->
     <div class="form-row">
       <div class="form-group">
         <label for="producao">Produção Executada</label>
@@ -114,6 +111,7 @@
       </div>
     </div>
 
+    <!-- Fotografia -->
     <div class="form-group">
       <label for="foto">Fotografia da Obra / Comprovativo</label>
       <input type="file" id="foto" accept="image/*" capture="environment">
@@ -122,6 +120,7 @@
       </div>
     </div>
 
+    <!-- Observações / Anomalias -->
     <div class="form-group">
       <label for="obs">Observações / Anomalias</label>
       <textarea id="obs" rows="2" placeholder="Ocorrências da jornada..."></textarea>
@@ -134,8 +133,8 @@
 </div>
 
 <script>
-  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbw2TF75v3qMZ4R4udRTxA09wkR32ty8oEZiAc1gMIhHymveeAMX0Q3E5d5nNLo4HdiBqg/exec";
-  const WEBHOOK_GET_LISTS_URL = "https://script.google.com/macros/s/AKfycbw2TF75v3qMZ4R4udRTxA09wkR32ty8oEZiAc1gMIhHymveeAMX0Q3E5d5nNLo4HdiBqg/exec";
+  const WEBHOOK_POST_URL = "https://script.google.com/macros/s/AKfycbweNTlNa72vwWXXr2K8xbnDabyOfyD4lJwZxNFEmp29mvir-xFBxl9vMjEfZMLEZAfmtg/exec";
+  const WEBHOOK_GET_LISTS_URL = "https://script.google.com/macros/s/AKfycbweNTlNa72vwWXXr2K8xbnDabyOfyD4lJwZxNFEmp29mvir-xFBxl9vMjEfZMLEZAfmtg/exec";
 
   document.getElementById('data').valueAsDate = new Date();
 
@@ -261,24 +260,16 @@
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const hIni = parseFloat(document.getElementById('hInicial').value) || 0;
-    const hFin = parseFloat(document.getElementById('hFinal').value) || 0;
-    const totalH = hFin >= hIni ? (hFin - hIni) : 0;
-    const prod = parseFloat(document.getElementById('producao').value) || 0;
-    const rend = totalH > 0 ? (prod / totalH) : 0;
-
     const payload = {
       Data: document.getElementById('data').value,
       ObraID: document.getElementById('obraID').value,
       EquipamentoID: document.getElementById('equipamentoID').value,
-      Material: document.getElementById('material').value,
       Litros_Abast: parseFloat(document.getElementById('litros').value) || 0,
-      Produção: prod,
+      Km_Horas: parseFloat(document.getElementById('kmHoras').value) || 0,
+      Material: document.getElementById('material').value,
+      Quant_Utilizada: parseFloat(document.getElementById('quantUtilz').value) || 0,
+      Produção: parseFloat(document.getElementById('producao').value) || 0,
       Unidade: document.getElementById('unidade').value,
-      H_Inicial: hIni,
-      H_Final: hFin,
-      'Total_H/Maq': totalH,
-      RendimentoEq: parseFloat(rend.toFixed(2)),
       Foto_Base64: currentBase64Image,
       'Obs.': document.getElementById('obs').value,
       StatusImportacao: 'Pendente'
