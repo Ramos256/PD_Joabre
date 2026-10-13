@@ -1,10 +1,14 @@
 {
-  "name": "Registo de Frota e Combustível",
+  "id": "/PD_Joabre/",
+  "name": "JOABRE - Parte Diária de Obra",
   "short_name": "JOABRE",
+  "description": "Registo diário de obras, operadores, equipamentos, materiais e fotografias.",
+  "lang": "pt-PT",
   "start_url": "/PD_Joabre/index.html",
   "scope": "/PD_Joabre/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#f3f4f6",
   "theme_color": "#2563eb",
   "icons": [
     {
