@@ -181,18 +181,40 @@ definirDataHoje();
       const res = await fetch(WEBHOOK_URL);
       if (!res.ok) throw new Error("Erro ao obter dados");
       const data = await res.json();
-      localStorage.setItem('cached_dropdowns', JSON.stringify(data));
-      populateSelects(data);
+
+if (!res.ok || data.result === "error") {
+  throw new Error(data.error || "Erro ao carregar as listas.");
+}
+
+localStorage.setItem('cached_dropdowns', JSON.stringify(data));
+populateSelects(data);
+
+showStatus("Listas atualizadas com sucesso.", "success");
     } catch (err) {
-      const cached = localStorage.getItem('cached_dropdowns');
-      if (cached) {
-        populateSelects(JSON.parse(cached));
-      } else {
-        // Fallback caso falhe
-        populateSelects({ operadores: [], obras: [], equipamentos: [], materiais: [] });
-      }
-    }
+  console.error("Erro ao carregar listas:", err);
+
+  const cached = localStorage.getItem('cached_dropdowns');
+
+  if (cached) {
+    populateSelects(JSON.parse(cached));
+    showStatus(
+      "Sem atualização do servidor. A usar listas guardadas.",
+      "offline"
+    );
+  } else {
+    populateSelects({
+      operadores: [],
+      obras: [],
+      equipamentos: [],
+      materiais: []
+    });
+
+    showStatus(
+      "Falha ao carregar listas: " + err.message,
+      "offline"
+    );
   }
+}
 
   function populateSelects(data) {
     fillSelect('operador', data.operadores, 'Operador', 'Operador', 'Selecione o Operador...');
