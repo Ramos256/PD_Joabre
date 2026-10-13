@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="JOABRE">
+
   <title>Registo Parte Diária - Frota & Obras</title>
 
   <link rel="icon" type="image/svg+xml" href="/PD_Joabre/icon_joabre.svg">
@@ -372,9 +377,7 @@
 
   /**
    * Obtém as listas do Apps Script.
-   *
    * Evita pedidos simultâneos e guarda os dados em cache.
-   * Se falhar, mantém as listas disponíveis no dispositivo.
    */
   async function loadDropdownData() {
     if (dropdownLoadPromise) {
@@ -414,12 +417,11 @@
         }
 
         localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-
         populateSelects(data);
 
         lastDropdownLoadAt = Date.now();
 
-        // Não apresenta a mensagem com as estatísticas das listas.
+        // Não mostra estatísticas das listas.
         console.log("Listas atualizadas.");
 
       } catch (err) {
@@ -463,11 +465,7 @@
   }
 
   /**
-   * Preenche todas as listas sem perder as seleções atuais.
-   *
-   * Se um valor já selecionado continuar a existir nas opções,
-   * mantém-no. Se já não existir na lista atualizada, seleciona
-   * a opção vazia.
+   * Preenche todas as listas preservando as seleções atuais.
    */
   function populateSelects(data) {
     const ids = [
@@ -508,7 +506,6 @@
       "Selecione o Material (Opcional)..."
     );
 
-    // Restaura cada seleção se a opção ainda existir.
     ids.forEach(id => {
       const select = document.getElementById(id);
       const valorAnterior = valoresAnteriores[id];
@@ -517,11 +514,7 @@
         option => option.value === valorAnterior
       );
 
-      if (opcaoExiste) {
-        select.value = valorAnterior;
-      } else {
-        select.value = "";
-      }
+      select.value = opcaoExiste ? valorAnterior : "";
     });
   }
 
@@ -576,7 +569,7 @@
   }
 
   /**
-   * Lista de equipamentos: EquipamentoID + Descrição + Matrícula_Série.
+   * Lista de equipamentos.
    */
   function fillSelectEquipamento(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
@@ -609,7 +602,7 @@
   }
 
   /**
-   * Lista de materiais. O value é MateriaisID, não a descrição.
+   * Lista de materiais. O value é MateriaisID.
    */
   function fillSelectMaterial(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
@@ -621,7 +614,6 @@
 
     items.forEach(item => {
       if (typeof item === "string") {
-        // Compatibilidade com uma resposta antiga do servidor.
         if (item.trim()) {
           addOption(select, item, item);
         }
@@ -645,9 +637,7 @@
   }
 
   /**
-   * Carrega primeiro as listas guardadas no dispositivo.
-   * Assim, não é necessário esperar pela resposta do servidor
-   * para começar a preencher o formulário.
+   * Apresenta primeiro as listas guardadas localmente.
    */
   function carregarListasDaCache() {
     try {
@@ -660,7 +650,6 @@
       if (!listasValidas(data)) return false;
 
       populateSelects(data);
-
       return true;
 
     } catch (err) {
@@ -684,7 +673,6 @@
   window.addEventListener("online", function() {
     updateOnlineStatus();
 
-    // Atualiza as listas ao recuperar a ligação, caso estejam antigas.
     if (
       Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL
     ) {
@@ -694,16 +682,12 @@
 
   window.addEventListener("offline", () => {
     offlineBadge.style.display = "inline-block";
-
     showStatus("Sem ligação à Internet.", "offline");
   });
 
   /**
-   * Quando a aplicação volta a estar ativa, só atualiza as listas
-   * se tiverem passado pelo menos cinco minutos desde a última
-   * atualização bem-sucedida.
-   *
-   * Evita pedidos desnecessários ao regressar da câmara ou galeria.
+   * Ao regressar da câmara, só atualiza as listas se estiverem
+   * há pelo menos cinco minutos sem atualização bem-sucedida.
    */
   document.addEventListener("visibilitychange", () => {
     if (
@@ -738,7 +722,6 @@
       Horas_Parag:
         parseFloat(document.getElementById("horasParag").value) || 0,
 
-      // Envia o identificador do material para a coluna MaterialID.
       MaterialID: document.getElementById("material").value,
 
       Quant_Utilizada:
@@ -748,11 +731,8 @@
         parseFloat(document.getElementById("producao").value) || 0,
 
       Unidade: document.getElementById("unidade").value,
-
       Foto_Base64: currentBase64Image,
-
       "Obs.": document.getElementById("obs").value,
-
       StatusImportacao: "Pendente"
     };
 
@@ -793,7 +773,6 @@
 
   /**
    * Envia dados e verifica a resposta JSON do Apps Script.
-   * Só considera o registo concluído quando result === success.
    */
   async function sendData(data, fromQueue = false) {
     const response = await fetch(WEBHOOK_URL, {
@@ -850,7 +829,6 @@
 
   /**
    * Sincroniza individualmente os registos offline.
-   * Mantém na fila os registos cujo envio falhou.
    */
   let syncingOffline = false;
 
@@ -876,13 +854,11 @@
         try {
           await sendData(data, true);
           enviados++;
-
         } catch (err) {
           console.error(
             "Falha ao sincronizar registo offline:",
             err
           );
-
           restantes.push(item);
         }
       }
@@ -897,7 +873,6 @@
           "Todos os registos offline foram sincronizados.",
           "success"
         );
-
       } else if (enviados > 0) {
         showStatus(
           enviados + " registo(s) sincronizado(s). " +
@@ -909,7 +884,6 @@
 
     } catch (err) {
       console.error("Erro na sincronização offline:", err);
-
     } finally {
       syncingOffline = false;
     }
@@ -932,16 +906,31 @@
 
   /**
    * Inicialização.
-   *
-   * 1. Apresenta primeiro as listas da cache.
-   * 2. Atualiza o estado da ligação.
-   * 3. Tenta atualizar as listas a partir do servidor.
    */
   carregarListasDaCache();
-
   updateOnlineStatus();
-
   loadDropdownData();
+</script>
+
+<!-- Registo da aplicação offline/PWA -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function() {
+      navigator.serviceWorker.register("/PD_Joabre/sw.js", {
+        scope: "/PD_Joabre/"
+      }).then(function(registration) {
+        console.log(
+          "JOABRE: aplicação preparada.",
+          registration.scope
+        );
+      }).catch(function(error) {
+        console.error(
+          "Erro ao registar a aplicação offline:",
+          error
+        );
+      });
+    });
+  }
 </script>
 </body>
 </html>
