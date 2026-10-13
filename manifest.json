@@ -10,7 +10,8 @@
     {
       "src": "/PD_Joabre/icon_joabre.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
