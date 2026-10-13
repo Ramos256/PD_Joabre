@@ -2,23 +2,23 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#2563eb">
   <title>Registo Parte Diária - Frota & Obras</title>
-  <link rel="manifest" href="manifest.json">
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    body { background-color: #f3f4f6; margin: 0; padding: 12px; color: #1f2937; }
-    .card { background: white; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    body { background-color: #f3f4f6; margin: 0; padding: 12px 12px 60px 12px; color: #1f2937; }
+    .card { background: white; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 40px; }
     h2 { margin-top: 0; color: #111827; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
     .form-row { display: flex; gap: 10px; }
     .form-row .form-group { flex: 1; }
-    .form-group { margin-bottom: 12px; }
+    .form-group { margin-bottom: 14px; }
     label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #374151; }
-    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; outline: none; }
-    input:focus, select:focus, textarea:focus { border-color: #2563eb; }
-    button { width: 100%; background-color: #2563eb; color: white; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-    .status { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 0.85rem; text-align: center; display: none; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; outline: none; background: #fff; }
+    input:focus, select:focus, textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+    button { width: 100%; background-color: #2563eb; color: white; border: none; padding: 16px; font-size: 1.05rem; font-weight: 600; border-radius: 8px; cursor: pointer; margin-top: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    button:active { background-color: #1d4ed8; }
+    .status { margin-top: 15px; padding: 12px; border-radius: 6px; font-size: 0.9rem; text-align: center; display: none; }
     .status.success { background-color: #d1fae5; color: #065f46; display: block; }
     .status.offline { background-color: #fef3c7; color: #92400e; display: block; }
     .badge-offline { background: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; display: none; }
@@ -233,10 +233,6 @@
     });
   }
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-
   function updateOnlineStatus() {
     if (navigator.onLine) {
       offlineBadge.style.display = 'none';
@@ -290,7 +286,7 @@
     try {
       const response = await fetch(WEBHOOK_POST_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' }, // <--- Alterado para text/plain para contornar o CORS do Apps Script
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(data)
       });
 
@@ -321,7 +317,7 @@
       try {
         await fetch(WEBHOOK_POST_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' }, // <--- Também alterado aqui
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(pendentes[i])
         });
       } catch (err) {
@@ -343,9 +339,9 @@
   function showStatus(text, type) {
     statusMsg.textContent = text;
     statusMsg.className = `status ${type}`;
+    statusMsg.style.display = 'block';
     setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
   }
 </script>
-
 </body>
 </html>
