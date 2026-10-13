@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -275,6 +274,9 @@
   const WEBHOOK_URL =
     "https://script.google.com/macros/s/AKfycbx32vBWrqWl1NIkPnSmWcAC2yEwZdTW6ehnwTPX46S2-80JqkJdRsDDnxrkjF-6aqZv1w/exec";
 
+  const CACHE_KEY = "cached_dropdowns";
+  const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
+
   const form = document.getElementById("parteDiariaForm");
   const statusMsg = document.getElementById("statusMsg");
   const offlineBadge = document.getElementById("offlineBadge");
@@ -286,6 +288,8 @@
 
   let currentBase64Image = "";
   let statusTimer = null;
+  let lastDropdownLoadAt = 0;
+  let dropdownLoadPromise = null;
 
   /**
    * Usa a data local do dispositivo sem conversão UTC.
@@ -354,98 +358,132 @@
   });
 
   /**
-   * Obtém as listas do Apps Script.
-   * Se falhar, usa os últimos dados guardados no dispositivo.
+   * Verifica se a resposta contém todas as listas necessárias.
    */
-  async function loadDropdownData() {
-    try {
-      if (!navigator.onLine) {
-        throw new Error("O dispositivo está offline.");
-      }
-
-      const url = WEBHOOK_URL +
-        (WEBHOOK_URL.includes("?") ? "&" : "?") +
-        "_=" + Date.now();
-
-      const res = await fetch(url, {
-        method: "GET",
-        cache: "no-store",
-        redirect: "follow"
-      });
-
-      if (!res.ok) {
-        throw new Error("Erro HTTP " + res.status);
-      }
-
-      const data = await res.json();
-
-      if (data.result === "error") {
-        throw new Error(data.error || "Erro no Apps Script.");
-      }
-
-      if (
-        !Array.isArray(data.operadores) ||
-        !Array.isArray(data.obras) ||
-        !Array.isArray(data.equipamentos) ||
-        !Array.isArray(data.materiais)
-      ) {
-        throw new Error("A resposta do servidor não contém todas as listas.");
-      }
-
-      localStorage.setItem("cached_dropdowns", JSON.stringify(data));
-      populateSelects(data);
-
-      showStatus(
-        "Listas atualizadas: " +
-        data.operadores.length + " operadores, " +
-        data.obras.length + " obras, " +
-        data.equipamentos.length + " equipamentos e " +
-        data.materiais.length + " materiais.",
-        "success"
-      );
-
-    } catch (err) {
-      console.error("Erro ao carregar listas:", err);
-
-      try {
-        const cached = localStorage.getItem("cached_dropdowns");
-
-        if (cached) {
-          const data = JSON.parse(cached);
-          populateSelects(data);
-
-          showStatus(
-            "Não foi possível atualizar as listas. " +
-            "A utilizar os últimos dados guardados. " + err.message,
-            "offline",
-            true
-          );
-
-          return;
-        }
-      } catch (cacheError) {
-        console.error("Erro na cache das listas:", cacheError);
-      }
-
-      populateSelects({
-        operadores: [],
-        obras: [],
-        equipamentos: [],
-        materiais: []
-      });
-
-      showStatus(
-        "Falha ao carregar as listas: " + err.message,
-        "offline",
-        true
-      );
-    }
+  function listasValidas(data) {
+    return Boolean(
+      data &&
+      Array.isArray(data.operadores) &&
+      Array.isArray(data.obras) &&
+      Array.isArray(data.equipamentos) &&
+      Array.isArray(data.materiais)
+    );
   }
 
   /**
-   * Preenche todas as listas.
+   * Obtém as listas do Apps Script.
+   *
+   * Evita pedidos simultâneos e guarda os dados em cache.
+   * Se falhar, mantém as listas disponíveis no dispositivo.
+   */
+  async function loadDropdownData() {
+    if (dropdownLoadPromise) {
+      return dropdownLoadPromise;
+    }
+
+    dropdownLoadPromise = (async function() {
+      try {
+        if (!navigator.onLine) {
+          throw new Error("O dispositivo está offline.");
+        }
+
+        const url = WEBHOOK_URL +
+          (WEBHOOK_URL.includes("?") ? "&" : "?") +
+          "_=" + Date.now();
+
+        const res = await fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          redirect: "follow"
+        });
+
+        if (!res.ok) {
+          throw new Error("Erro HTTP " + res.status);
+        }
+
+        const data = await res.json();
+
+        if (data.result === "error") {
+          throw new Error(data.error || "Erro no Apps Script.");
+        }
+
+        if (!listasValidas(data)) {
+          throw new Error(
+            "A resposta do servidor não contém todas as listas."
+          );
+        }
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+
+        populateSelects(data);
+
+        lastDropdownLoadAt = Date.now();
+
+        // Não apresenta a mensagem com as estatísticas das listas.
+        console.log("Listas atualizadas.");
+
+      } catch (err) {
+        console.error("Erro ao carregar listas:", err);
+
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+
+          if (cached) {
+            const data = JSON.parse(cached);
+
+            if (listasValidas(data)) {
+              populateSelects(data);
+
+              showStatus(
+                "Não foi possível atualizar as listas. " +
+                "A utilizar os últimos dados guardados.",
+                "offline",
+                true
+              );
+
+              return;
+            }
+          }
+        } catch (cacheError) {
+          console.error("Erro na cache das listas:", cacheError);
+        }
+
+        showStatus(
+          "Falha ao carregar as listas: " + err.message,
+          "offline",
+          true
+        );
+
+      } finally {
+        dropdownLoadPromise = null;
+      }
+    })();
+
+    return dropdownLoadPromise;
+  }
+
+  /**
+   * Preenche todas as listas sem perder as seleções atuais.
+   *
+   * Se um valor já selecionado continuar a existir nas opções,
+   * mantém-no. Se já não existir na lista atualizada, seleciona
+   * a opção vazia.
    */
   function populateSelects(data) {
+    const ids = [
+      "operador",
+      "obraID",
+      "equipamentoID",
+      "material"
+    ];
+
+    const valoresAnteriores = {};
+
+    ids.forEach(id => {
+      valoresAnteriores[id] =
+        document.getElementById(id).value;
+    });
+
     fillSelect(
       "operador",
       data.operadores,
@@ -469,6 +507,22 @@
       data.materiais,
       "Selecione o Material (Opcional)..."
     );
+
+    // Restaura cada seleção se a opção ainda existir.
+    ids.forEach(id => {
+      const select = document.getElementById(id);
+      const valorAnterior = valoresAnteriores[id];
+
+      const opcaoExiste = Array.from(select.options).some(
+        option => option.value === valorAnterior
+      );
+
+      if (opcaoExiste) {
+        select.value = valorAnterior;
+      } else {
+        select.value = "";
+      }
+    });
   }
 
   /**
@@ -483,8 +537,11 @@
     if (!Array.isArray(items)) return;
 
     items.forEach(value => {
-      if (value !== null && value !== undefined &&
-          String(value).trim() !== "") {
+      if (
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== ""
+      ) {
         addOption(select, String(value), String(value));
       }
     });
@@ -503,8 +560,13 @@
 
     items.forEach(item => {
       const id = String(item.ObraID || item.ID || "").trim();
+
       const nome = String(
-        item.NomeObra || item.Nome || item.Obra || item.Descricao || ""
+        item.NomeObra ||
+        item.Nome ||
+        item.Obra ||
+        item.Descricao ||
+        ""
       ).trim();
 
       if (id) {
@@ -526,8 +588,14 @@
 
     items.forEach(item => {
       const id = String(item.EquipamentoID || "").trim();
-      const descricao = String(item["Descrição"] || item.Descricao || "").trim();
-      const matricula = String(item["Matrícula_Série"] || "").trim();
+
+      const descricao = String(
+        item["Descrição"] || item.Descricao || ""
+      ).trim();
+
+      const matricula = String(
+        item["Matrícula_Série"] || ""
+      ).trim();
 
       if (!id) return;
 
@@ -554,7 +622,9 @@
     items.forEach(item => {
       if (typeof item === "string") {
         // Compatibilidade com uma resposta antiga do servidor.
-        if (item.trim()) addOption(select, item, item);
+        if (item.trim()) {
+          addOption(select, item, item);
+        }
         return;
       }
 
@@ -575,6 +645,31 @@
   }
 
   /**
+   * Carrega primeiro as listas guardadas no dispositivo.
+   * Assim, não é necessário esperar pela resposta do servidor
+   * para começar a preencher o formulário.
+   */
+  function carregarListasDaCache() {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+
+      if (!cached) return false;
+
+      const data = JSON.parse(cached);
+
+      if (!listasValidas(data)) return false;
+
+      populateSelects(data);
+
+      return true;
+
+    } catch (err) {
+      console.error("Erro ao ler a cache das listas:", err);
+      return false;
+    }
+  }
+
+  /**
    * Estado da ligação.
    */
   function updateOnlineStatus() {
@@ -586,18 +681,36 @@
     }
   }
 
-  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("online", function() {
+    updateOnlineStatus();
+
+    // Atualiza as listas ao recuperar a ligação, caso estejam antigas.
+    if (
+      Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL
+    ) {
+      loadDropdownData();
+    }
+  });
 
   window.addEventListener("offline", () => {
     offlineBadge.style.display = "inline-block";
+
     showStatus("Sem ligação à Internet.", "offline");
   });
 
   /**
-   * Recarrega as listas quando a aplicação volta a estar ativa.
+   * Quando a aplicação volta a estar ativa, só atualiza as listas
+   * se tiverem passado pelo menos cinco minutos desde a última
+   * atualização bem-sucedida.
+   *
+   * Evita pedidos desnecessários ao regressar da câmara ou galeria.
    */
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && navigator.onLine) {
+    if (
+      !document.hidden &&
+      navigator.onLine &&
+      Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL
+    ) {
       loadDropdownData();
     }
   });
@@ -615,18 +728,31 @@
       Operador: document.getElementById("operador").value,
       ObraID: document.getElementById("obraID").value,
       EquipamentoID: document.getElementById("equipamentoID").value,
-      Litros_Abast: parseFloat(document.getElementById("litros").value) || 0,
-      Km_Horas: parseFloat(document.getElementById("kmHoras").value) || 0,
-      Horas_Parag: parseFloat(document.getElementById("horasParag").value) || 0,
+
+      Litros_Abast:
+        parseFloat(document.getElementById("litros").value) || 0,
+
+      Km_Horas:
+        parseFloat(document.getElementById("kmHoras").value) || 0,
+
+      Horas_Parag:
+        parseFloat(document.getElementById("horasParag").value) || 0,
 
       // Envia o identificador do material para a coluna MaterialID.
       MaterialID: document.getElementById("material").value,
 
-      Quant_Utilizada: parseFloat(document.getElementById("quantUtilz").value) || 0,
-      Produção: parseFloat(document.getElementById("producao").value) || 0,
+      Quant_Utilizada:
+        parseFloat(document.getElementById("quantUtilz").value) || 0,
+
+      Produção:
+        parseFloat(document.getElementById("producao").value) || 0,
+
       Unidade: document.getElementById("unidade").value,
+
       Foto_Base64: currentBase64Image,
+
       "Obs.": document.getElementById("obs").value,
+
       StatusImportacao: "Pendente"
     };
 
@@ -638,13 +764,27 @@
         await sendData(payload);
       } else {
         saveOffline(payload);
+
         showStatus(
           "Guardado localmente sem rede. " +
           "Será enviado quando houver ligação.",
           "offline"
         );
+
         resetForm();
       }
+
+    } catch (err) {
+      console.error("Erro ao guardar a parte diária:", err);
+
+      showStatus(
+        "Não foi possível guardar o registo. " +
+        "Os dados continuam no formulário. " +
+        (err.message || ""),
+        "offline",
+        true
+      );
+
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Guardar Parte Diária";
@@ -672,7 +812,9 @@
     const result = await response.json();
 
     if (result.result !== "success") {
-      throw new Error(result.error || "O servidor não confirmou a gravação.");
+      throw new Error(
+        result.error || "O servidor não confirmou a gravação."
+      );
     }
 
     if (!fromQueue) {
@@ -680,6 +822,7 @@
         "Parte diária inserida com sucesso! ID: " + result.id,
         "success"
       );
+
       resetForm();
     }
 
@@ -733,8 +876,13 @@
         try {
           await sendData(data, true);
           enviados++;
+
         } catch (err) {
-          console.error("Falha ao sincronizar registo offline:", err);
+          console.error(
+            "Falha ao sincronizar registo offline:",
+            err
+          );
+
           restantes.push(item);
         }
       }
@@ -749,6 +897,7 @@
           "Todos os registos offline foram sincronizados.",
           "success"
         );
+
       } else if (enviados > 0) {
         showStatus(
           enviados + " registo(s) sincronizado(s). " +
@@ -760,6 +909,7 @@
 
     } catch (err) {
       console.error("Erro na sincronização offline:", err);
+
     } finally {
       syncingOffline = false;
     }
@@ -773,6 +923,7 @@
 
     currentBase64Image = "";
     fotoInput.value = "";
+
     photoPreview.removeAttribute("src");
     photoPreviewContainer.style.display = "none";
 
@@ -781,8 +932,15 @@
 
   /**
    * Inicialização.
+   *
+   * 1. Apresenta primeiro as listas da cache.
+   * 2. Atualiza o estado da ligação.
+   * 3. Tenta atualizar as listas a partir do servidor.
    */
+  carregarListasDaCache();
+
   updateOnlineStatus();
+
   loadDropdownData();
 </script>
 </body>
