@@ -492,11 +492,17 @@
 
   function esconderSplash() {
     if (splashHidden) return;
-    splashHidden = true;
-    splashScreen.classList.add("fade-out");
+
+    const tempoDecorrido = Date.now() - inicioApp;
+    const tempoRestante = Math.max(0, TEMPO_MINIMO_SPLASH - tempoDecorrido);
+
     setTimeout(() => {
-      splashScreen.style.display = "none";
-    }, 400);
+      splashHidden = true;
+      splashScreen.classList.add("fade-out");
+      setTimeout(() => {
+        splashScreen.style.display = "none";
+      }, 400);
+    }, tempoRestante);
   }
 
   /**
