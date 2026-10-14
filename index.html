@@ -30,7 +30,7 @@
       color: #1f2937;
     }
 
-    /* --- SPLASH SCREEN PROFISSIONAL --- */
+    /* --- SPLASH SCREEN --- */
     #splashScreen {
       position: fixed;
       top: 0;
@@ -91,7 +91,6 @@
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.06); opacity: 0.85; }
     }
-    /* ---------------------------------- */
 
     .card {
       background: white;
@@ -150,7 +149,6 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
-    /* Seletor Personalizado para Equipa Apoio */
     .custom-select-box {
       position: relative;
       cursor: pointer;
@@ -305,25 +303,16 @@
     }
 
     @media (max-width: 360px) {
-      .card {
-        padding: 14px;
-      }
-
-      .form-row {
-        gap: 6px;
-      }
-
-      input, select, textarea {
-        padding: 8px;
-        font-size: 0.88rem;
-      }
+      .card { padding: 14px; }
+      .form-row { gap: 6px; }
+      input, select, textarea { padding: 8px; font-size: 0.88rem; }
     }
   </style>
 </head>
 
 <body>
 
-<!-- SPLASH SCREEN DE APRESENTAÇÃO PROFISSIONAL -->
+<!-- SPLASH SCREEN -->
 <div id="splashScreen">
   <div class="splash-logo-container">
     <img src="/PD_Joabre/icon_joabre.svg" alt="JOABRE Logo">
@@ -354,7 +343,6 @@
       </div>
     </div>
 
-    <!-- Linha com Equipa Apoio (2/3) e H. Extra Trab. (1/3) lado a lado -->
     <div class="form-row">
       <div class="form-group" style="flex: 2;">
         <label>Equipa Apoio (Múltipla Seleção)</label>
@@ -363,9 +351,7 @@
             <span id="equipaApoioTexto">Selecione a equipa...</span>
           </div>
           <div class="custom-popover" id="equipaApoioPopover">
-            <div class="pills-container" id="equipaApoioPills">
-              <!-- Módulos clicáveis com bolinhas gerados via JS -->
-            </div>
+            <div class="pills-container" id="equipaApoioPills"></div>
           </div>
         </div>
       </div>
@@ -460,11 +446,13 @@
 </div>
 
 <script>
-  const WEBHOOK_URL =
-    "https://script.google.com/macros/s/AKfycbx6mvaxsooCddFKkLEHdj1HFwfOljmfo7KxJ7h-earuuLzVd87Xjj8PuO0-wck1-NdkoA/exec";
-
+  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx6mvaxsooCddFKkLEHdj1HFwfOljmfo7KxJ7h-earuuLzVd87Xjj8PuO0-wck1-NdkoA/exec";
   const CACHE_KEY = "cached_dropdowns";
   const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+  // CONTROLO DE TEMPO DO SPLASH
+  const TEMPO_MINIMO_SPLASH = 1800; // 1.8 segundos
+  const inicioApp = Date.now();
 
   const form = document.getElementById("parteDiariaForm");
   const statusMsg = document.getElementById("statusMsg");
@@ -472,11 +460,9 @@
   const submitBtn = document.getElementById("submitBtn");
   const fotoInput = document.getElementById("foto");
   const photoPreview = document.getElementById("photoPreview");
-  const photoPreviewContainer =
-    document.getElementById("photoPreviewContainer");
+  const photoPreviewContainer = document.getElementById("photoPreviewContainer");
   const splashScreen = document.getElementById("splashScreen");
 
-  // Elementos do Seletor Personalizado da Equipa
   const equipaApoioBox = document.getElementById("equipaApoioBox");
   const equipaApoioTrigger = document.getElementById("equipaApoioTrigger");
   const equipaApoioPopover = document.getElementById("equipaApoioPopover");
@@ -492,7 +478,6 @@
 
   function esconderSplash() {
     if (splashHidden) return;
-
     const tempoDecorrido = Date.now() - inicioApp;
     const tempoRestante = Math.max(0, TEMPO_MINIMO_SPLASH - tempoDecorrido);
 
@@ -505,9 +490,6 @@
     }, tempoRestante);
   }
 
-  /**
-   * Gestão do Popover da Equipa Apoio
-   */
   equipaApoioTrigger.addEventListener("click", (e) => {
     e.stopPropagation();
     equipaApoioPopover.classList.toggle("open");
@@ -519,75 +501,50 @@
     }
   });
 
-  /**
-   * Usa a data local do dispositivo sem conversão UTC.
-   */
   function definirDataHoje() {
     const agora = new Date();
     const ano = agora.getFullYear();
     const mes = String(agora.getMonth() + 1).padStart(2, "0");
     const dia = String(agora.getDate()).padStart(2, "0");
-
-    document.getElementById("data").value =
-      `${ano}-${mes}-${dia}`;
+    document.getElementById("data").value = `${ano}-${mes}-${dia}`;
   }
-
   definirDataHoje();
 
-  /**
-   * Mensagens de estado.
-   */
   function showStatus(text, type, persistente = false) {
     statusMsg.textContent = text;
     statusMsg.className = "status " + type;
     statusMsg.style.display = "block";
-
     if (statusTimer) clearTimeout(statusTimer);
-
     if (!persistente) {
-      statusTimer = setTimeout(() => {
-        statusMsg.style.display = "none";
-      }, 7000);
+      statusTimer = setTimeout(() => { statusMsg.style.display = "none"; }, 7000);
     }
   }
 
-  /**
-   * Fotografia e pré-visualização.
-   */
   fotoInput.addEventListener("change", function(e) {
     const file = e.target.files && e.target.files[0];
-
     if (!file) {
       currentBase64Image = "";
       photoPreview.removeAttribute("src");
       photoPreviewContainer.style.display = "none";
       return;
     }
-
     if (!file.type.startsWith("image/")) {
       showStatus("Selecione um ficheiro de imagem válido.", "offline");
       fotoInput.value = "";
       return;
     }
-
     const reader = new FileReader();
-
     reader.onload = function(evt) {
       currentBase64Image = evt.target.result;
       photoPreview.src = currentBase64Image;
       photoPreviewContainer.style.display = "block";
     };
-
     reader.onerror = function() {
       showStatus("Não foi possível ler a fotografia.", "offline");
     };
-
     reader.readAsDataURL(file);
   });
 
-  /**
-   * Verifica se a resposta contém todas as listas necessárias.
-   */
   function listasValidas(data) {
     return Boolean(
       data &&
@@ -598,83 +555,38 @@
     );
   }
 
-  /**
-   * Obtém as listas do Apps Script.
-   */
   async function loadDropdownData() {
-    if (dropdownLoadPromise) {
-      return dropdownLoadPromise;
-    }
+    if (dropdownLoadPromise) return dropdownLoadPromise;
 
     dropdownLoadPromise = (async function() {
       try {
-        if (!navigator.onLine) {
-          throw new Error("O dispositivo está offline.");
-        }
-
-        const url = WEBHOOK_URL +
-          (WEBHOOK_URL.includes("?") ? "&" : "?") +
-          "_=" + Date.now();
-
-        const res = await fetch(url, {
-          method: "GET",
-          cache: "no-store",
-          redirect: "follow"
-        });
-
-        if (!res.ok) {
-          throw new Error("Erro HTTP " + res.status);
-        }
-
+        if (!navigator.onLine) throw new Error("O dispositivo está offline.");
+        const url = WEBHOOK_URL + (WEBHOOK_URL.includes("?") ? "&" : "?") + "_=" + Date.now();
+        const res = await fetch(url, { method: "GET", cache: "no-store", redirect: "follow" });
+        if (!res.ok) throw new Error("Erro HTTP " + res.status);
         const data = await res.json();
-
-        if (data.result === "error") {
-          throw new Error(data.error || "Erro no Apps Script.");
-        }
-
-        if (!listasValidas(data)) {
-          throw new Error(
-            "A resposta do servidor não contém todas as listas."
-          );
-        }
+        if (data.result === "error") throw new Error(data.error || "Erro no Apps Script.");
+        if (!listasValidas(data)) throw new Error("A resposta do servidor não contém todas as listas.");
 
         localStorage.setItem(CACHE_KEY, JSON.stringify(data));
         populateSelects(data);
-
         lastDropdownLoadAt = Date.now();
-
       } catch (err) {
         console.error("Erro ao carregar listas:", err);
-
         try {
           const cached = localStorage.getItem(CACHE_KEY);
-
           if (cached) {
             const data = JSON.parse(cached);
-
             if (listasValidas(data)) {
               populateSelects(data);
-
-              showStatus(
-                "Não foi possível atualizar as listas. " +
-                "A utilizar os últimos dados guardados.",
-                "offline",
-                true
-              );
-
+              showStatus("A utilizar dados guardados offline.", "offline", true);
               return;
             }
           }
         } catch (cacheError) {
           console.error("Erro na cache das listas:", cacheError);
         }
-
-        showStatus(
-          "Falha ao carregar as listas: " + err.message,
-          "offline",
-          true
-        );
-
+        showStatus("Falha ao carregar as listas: " + err.message, "offline", true);
       } finally {
         dropdownLoadPromise = null;
         esconderSplash();
@@ -684,66 +596,27 @@
     return dropdownLoadPromise;
   }
 
-  /**
-   * Preenche todas as listas preservando as seleções atuais.
-   */
   function populateSelects(data) {
-    const ids = [
-      "operador",
-      "obraID",
-      "equipamentoID",
-      "material"
-    ];
-
+    const ids = ["operador", "obraID", "equipamentoID", "material"];
     const valoresAnteriores = {};
+    ids.forEach(id => { valoresAnteriores[id] = document.getElementById(id).value; });
 
-    ids.forEach(id => {
-      valoresAnteriores[id] = document.getElementById(id).value;
-    });
-
-    fillSelect(
-      "operador",
-      data.operadores,
-      "Selecione o Operador..."
-    );
-
+    fillSelect("operador", data.operadores, "Selecione o Operador...");
     renderEquipaApoioPills(data.operadores);
-
-    fillSelectObra(
-      "obraID",
-      data.obras,
-      "Selecione a Obra..."
-    );
-
-    fillSelectEquipamento(
-      "equipamentoID",
-      data.equipamentos,
-      "Selecione o Equipamento (Opcional)..."
-    );
-
-    fillSelectMaterial(
-      "material",
-      data.materiais,
-      "Selecione o Material (Opcional)..."
-    );
+    fillSelectObra("obraID", data.obras, "Selecione a Obra...");
+    fillSelectEquipamento("equipamentoID", data.equipamentos, "Selecione o Equipamento (Opcional)...");
+    fillSelectMaterial("material", data.materiais, "Selecione o Material (Opcional)...");
 
     ids.forEach(id => {
       const select = document.getElementById(id);
       const valorAnterior = valoresAnteriores[id];
-
-      const opcaoExiste = Array.from(select.options).some(
-        option => option.value === valorAnterior
-      );
+      const opcaoExiste = Array.from(select.options).some(option => option.value === valorAnterior);
       select.value = opcaoExiste ? valorAnterior : "";
     });
   }
 
-  /**
-   * Renderiza os botões clicáveis (pills/bolinhas) para a Equipa Apoio
-   */
   function renderEquipaApoioPills(operadores) {
     equipaApoioPills.replaceChildren();
-
     if (!Array.isArray(operadores)) return;
 
     operadores.forEach(nome => {
@@ -790,111 +663,59 @@
     }
   }
 
-  /**
-   * Lista simples de operadores.
-   */
   function fillSelect(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.replaceChildren();
-
     addOption(select, "", defaultText);
-
     if (!Array.isArray(items)) return;
-
     items.forEach(value => {
-      if (
-        value !== null &&
-        value !== undefined &&
-        String(value).trim() !== ""
-      ) {
+      if (value !== null && value !== undefined && String(value).trim() !== "") {
         addOption(select, String(value), String(value));
       }
     });
   }
 
-  /**
-   * Lista de obras: ObraID + NomeObra.
-   */
   function fillSelectObra(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.replaceChildren();
-
     addOption(select, "", defaultText);
-
     if (!Array.isArray(items)) return;
-
     items.forEach(item => {
       const id = String(item.ObraID || item.ID || "").trim();
-
-      const nome = String(
-        item.NomeObra ||
-        item.Nome ||
-        item.Obra ||
-        item.Descricao ||
-        ""
-      ).trim();
-
+      const nome = String(item.NomeObra || item.Nome || item.Obra || item.Descricao || "").trim();
       if (id) {
         addOption(select, id, nome ? id + " - " + nome : id);
       }
     });
   }
 
-  /**
-   * Lista de equipamentos.
-   */
   function fillSelectEquipamento(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.replaceChildren();
-
     addOption(select, "", defaultText);
-
     if (!Array.isArray(items)) return;
-
     items.forEach(item => {
       const id = String(item.EquipamentoID || "").trim();
-
-      const descricao = String(
-        item["Descrição"] || item.Descricao || ""
-      ).trim();
-
-      const matricula = String(
-        item["Matrícula_Série"] || ""
-      ).trim();
-
+      const descricao = String(item["Descrição"] || item.Descricao || "").trim();
+      const matricula = String(item["Matrícula_Série"] || "").trim();
       if (!id) return;
-
-      const texto = [
-        descricao || id,
-        matricula ? "(" + matricula + ")" : ""
-      ].filter(Boolean).join(" ");
-
+      const texto = [descricao || id, matricula ? "(" + matricula + ")" : ""].filter(Boolean).join(" ");
       addOption(select, id, texto);
     });
   }
 
-  /**
-   * Lista de materiais. O value é MateriaisID.
-   */
   function fillSelectMaterial(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
     select.replaceChildren();
-
     addOption(select, "", defaultText);
-
     if (!Array.isArray(items)) return;
-
     items.forEach(item => {
       if (typeof item === "string") {
-        if (item.trim()) {
-          addOption(select, item, item);
-        }
+        if (item.trim()) addOption(select, item, item);
         return;
       }
-
       const id = String(item.MateriaisID || "").trim();
       const descricao = String(item["Descrição"] || "").trim();
-
       if (id && descricao) {
         addOption(select, id, descricao);
       }
@@ -908,32 +729,20 @@
     select.appendChild(option);
   }
 
-  /**
-   * Apresenta primeiro as listas guardadas localmente.
-   */
   function carregarListasDaCache() {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
-
       if (!cached) return false;
-
       const data = JSON.parse(cached);
-
       if (!listasValidas(data)) return false;
-
       populateSelects(data);
       esconderSplash();
       return true;
-
     } catch (err) {
-      console.error("Erro ao ler a cache das listas:", err);
       return false;
     }
   }
 
-  /**
-   * Estado da ligação.
-   */
   function updateOnlineStatus() {
     if (navigator.onLine) {
       offlineBadge.style.display = "none";
@@ -945,10 +754,7 @@
 
   window.addEventListener("online", function() {
     updateOnlineStatus();
-
-    if (
-      Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL
-    ) {
+    if (Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL) {
       loadDropdownData();
     }
   });
@@ -959,21 +765,13 @@
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (
-      !document.hidden &&
-      navigator.onLine &&
-      Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL
-    ) {
+    if (!document.hidden && navigator.onLine && Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL) {
       loadDropdownData();
     }
   });
 
-  /**
-   * Envio do formulário.
-   */
   form.addEventListener("submit", async function(e) {
     e.preventDefault();
-
     if (!form.reportValidity()) return;
 
     const payload = {
@@ -982,27 +780,13 @@
       Equipa_Apoio: equipaApoioSelecionada,
       ObraID: document.getElementById("obraID").value,
       EquipamentoID: document.getElementById("equipamentoID").value,
-
-      Litros_Abast:
-        parseFloat(document.getElementById("litros").value) || 0,
-
-      Km_Horas:
-        parseFloat(document.getElementById("kmHoras").value) || 0,
-
-      Horas_Parag:
-        parseFloat(document.getElementById("horasParag").value) || 0,
-
+      Litros_Abast: parseFloat(document.getElementById("litros").value) || 0,
+      Km_Horas: parseFloat(document.getElementById("kmHoras").value) || 0,
+      Horas_Parag: parseFloat(document.getElementById("horasParag").value) || 0,
       MaterialID: document.getElementById("material").value,
-
-      Quant_Utilizada:
-        parseFloat(document.getElementById("quantUtilz").value) || 0,
-
-      Horas_Extra:
-        parseFloat(document.getElementById("horasExtra").value) || 0,
-
-      Produção:
-        parseFloat(document.getElementById("producao").value) || 0,
-
+      Quant_Utilizada: parseFloat(document.getElementById("quantUtilz").value) || 0,
+      Horas_Extra: parseFloat(document.getElementById("horasExtra").value) || 0,
+      Produção: parseFloat(document.getElementById("producao").value) || 0,
       Unidade: document.getElementById("unidade").value,
       Foto_Base64: currentBase64Image,
       "Obs.": document.getElementById("obs").value,
@@ -1017,202 +801,100 @@
         await sendData(payload);
       } else {
         saveOffline(payload);
-
-        showStatus(
-          "Guardado localmente sem rede. " +
-          "Será enviado quando houver ligação.",
-          "offline"
-        );
-
+        showStatus("Guardado localmente sem rede. Será enviado quando houver ligação.", "offline");
         resetForm();
       }
-
     } catch (err) {
-      console.error("Erro ao guardar a parte diária:", err);
-
-      showStatus(
-        "Não foi possível guardar o registo. " +
-        "Os dados continuam no formulário. " +
-        (err.message || ""),
-        "offline",
-        true
-      );
-
+      showStatus("Não foi possível guardar o registo. " + (err.message || ""), "offline", true);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Guardar Parte Diária";
     }
   });
 
-  /**
-   * Envia dados e verifica a resposta JSON do Apps Script.
-   */
   async function sendData(data, fromQueue = false) {
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(data),
       redirect: "follow"
     });
-
-    if (!response.ok) {
-      throw new Error("Erro HTTP " + response.status);
-    }
-
+    if (!response.ok) throw new Error("Erro HTTP " + response.status);
     const result = await response.json();
-
-    if (result.result !== "success") {
-      throw new Error(
-        result.error || "O servidor não confirmou a gravação."
-      );
-    }
-
+    if (result.result !== "success") throw new Error(result.error || "O servidor não confirmou a gravação.");
     if (!fromQueue) {
-      showStatus(
-        "Parte diária inserida com sucesso! ID: " + result.id,
-        "success"
-      );
-
+      showStatus("Parte diária inserida com sucesso! ID: " + result.id, "success");
       resetForm();
     }
-
     return result;
   }
 
-  /**
-   * Guarda registos pendentes no armazenamento local.
-   */
   function saveOffline(data) {
-    const pendentes = JSON.parse(
-      localStorage.getItem("partes_diarias_pendentes") || "[]"
-    );
-
-    pendentes.push({
-      ...data,
-      _localId: Date.now() + "-" + Math.random().toString(36).slice(2)
-    });
-
-    localStorage.setItem(
-      "partes_diarias_pendentes",
-      JSON.stringify(pendentes)
-    );
+    const pendentes = JSON.parse(localStorage.getItem("partes_diarias_pendentes") || "[]");
+    pendentes.push({ ...data, _localId: Date.now() + "-" + Math.random().toString(36).slice(2) });
+    localStorage.setItem("partes_diarias_pendentes", JSON.stringify(pendentes));
   }
 
-  /**
-   * Sincroniza individualmente os registos offline.
-   */
   let syncingOffline = false;
-
   async function syncOfflineData() {
     if (syncingOffline || !navigator.onLine) return;
-
     syncingOffline = true;
-
     try {
-      const pendentes = JSON.parse(
-        localStorage.getItem("partes_diarias_pendentes") || "[]"
-      );
-
+      const pendentes = JSON.parse(localStorage.getItem("partes_diarias_pendentes") || "[]");
       if (!pendentes.length) return;
-
       const restantes = [];
       let enviados = 0;
-
       for (const item of pendentes) {
         const data = { ...item };
         delete data._localId;
-
         try {
           await sendData(data, true);
           enviados++;
         } catch (err) {
-          console.error(
-            "Falha ao sincronizar registo offline:",
-            err
-          );
           restantes.push(item);
         }
       }
-
-      localStorage.setItem(
-        "partes_diarias_pendentes",
-        JSON.stringify(restantes)
-      );
-
+      localStorage.setItem("partes_diarias_pendentes", JSON.stringify(restantes));
       if (enviados > 0 && restantes.length === 0) {
-        showStatus(
-          "Todos os registos offline foram sincronizados.",
-          "success"
-        );
-      } else if (enviados > 0) {
-        showStatus(
-          enviados + " registo(s) sincronizado(s). " +
-          restantes.length + " continuam pendentes.",
-          "offline",
-          true
-        );
+        showStatus("Todos os registos offline foram sincronizados.", "success");
       }
-
     } catch (err) {
-      console.error("Erro na sincronização offline:", err);
+      console.error("Erro offline:", err);
     } finally {
       syncingOffline = false;
     }
   }
 
-  /**
-   * Repõe o formulário sem perder as listas carregadas.
-   */
   function resetForm() {
     form.reset();
-
     equipaApoioSelecionada = [];
     atualizarTextoEquipaApoio();
-    
     const pills = equipaApoioPills.querySelectorAll(".pill-item");
     pills.forEach(p => p.classList.remove("selected"));
-
     currentBase64Image = "";
     fotoInput.value = "";
-
     photoPreview.removeAttribute("src");
     photoPreviewContainer.style.display = "none";
-
     definirDataHoje();
   }
 
-  /**
-   * Inicialização com fallback de segurança para o Splash Screen.
-   */
+  // Inicialização
   carregarListasDaCache();
   updateOnlineStatus();
   loadDropdownData();
 
-  // Fallback: se por algum motivo a rede demorar muito, esconde o splash após 3.5 segundos
+  // Força o fecho do Splash Screen após o tempo mínimo
   setTimeout(() => {
     esconderSplash();
-  }, 3500);
+  }, TEMPO_MINIMO_SPLASH);
 </script>
 
-<!-- Registo da aplicação offline/PWA -->
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function() {
-      navigator.serviceWorker.register("/PD_Joabre/sw.js", {
-        scope: "/PD_Joabre/"
-      }).then(function(registration) {
-        console.log(
-          "JOABRE: aplicação preparada.",
-          registration.scope
-        );
-      }).catch(function(error) {
-        console.error(
-          "Erro ao registar a aplicação offline:",
-          error
-        );
-      });
+      navigator.serviceWorker.register("/PD_Joabre/sw.js", { scope: "/PD_Joabre/" })
+        .then(function(registration) { console.log("JOABRE preparada:", registration.scope); })
+        .catch(function(error) { console.error("Erro PWA:", error); });
     });
   }
 </script>
