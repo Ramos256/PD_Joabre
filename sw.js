@@ -1,4 +1,4 @@
-const CACHE_NAME = "joabre-pd-v4";
+const CACHE_NAME = "joabre-pd-v5";
 
 const ASSETS = [
   "/PD_Joabre/",
