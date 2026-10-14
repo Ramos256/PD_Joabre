@@ -52,7 +52,6 @@
     }
 
     .form-row .form-group {
-      flex: 1;
       min-width: 0;
     }
 
@@ -84,6 +83,93 @@
     input:focus, select:focus, textarea:focus {
       border-color: #2563eb;
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Seletor Personalizado para Equipa Apoio */
+    .custom-select-box {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .custom-select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.95rem;
+      color: #374151;
+      min-height: 42px;
+    }
+
+    .custom-select-trigger::after {
+      content: "▼";
+      font-size: 0.7rem;
+      color: #6b7280;
+      margin-left: 6px;
+    }
+
+    .custom-popover {
+      display: none;
+      position: absolute;
+      top: 105%;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .custom-popover.open {
+      display: block;
+    }
+
+    .pills-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #d1d5db;
+      background: #f8fafc;
+      font-size: 0.85rem;
+      color: #334155;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .pill-item .bullet {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #94a3b8;
+      background: #fff;
+    }
+
+    .pill-item.selected {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    .pill-item.selected .bullet {
+      border-color: #2563eb;
+      background: #2563eb;
     }
 
     button {
@@ -179,12 +265,12 @@
 
   <form id="parteDiariaForm">
     <div class="form-row">
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="data">Data</label>
         <input type="date" id="data" required>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="operador">Operador</label>
         <select id="operador" required>
           <option value="">A carregar...</option>
@@ -192,13 +278,25 @@
       </div>
     </div>
 
-    <!-- Novo campo: Equipa Apoio com tamanho igual ao Material Aplicado / Utilizado -->
+    <!-- Linha com Equipa Apoio (2/3) e H. Extra Trab. (1/3) lado a lado -->
     <div class="form-row">
       <div class="form-group" style="flex: 2;">
-        <label for="equipaApoio">Equipa Apoio (Múltipla seleção)</label>
-        <select id="equipaApoio" multiple style="height: 85px;">
-          <option value="">A carregar...</option>
-        </select>
+        <label>Equipa Apoio (Múltipla Seleção)</label>
+        <div class="custom-select-box" id="equipaApoioBox">
+          <div class="custom-select-trigger" id="equipaApoioTrigger">
+            <span id="equipaApoioTexto">Selecione a equipa...</span>
+          </div>
+          <div class="custom-popover" id="equipaApoioPopover">
+            <div class="pills-container" id="equipaApoioPills">
+              <!-- Módulos clicáveis com bolinhas gerados via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label for="horasExtra">H. Extra Trab.</label>
+        <input type="number" id="horasExtra" step="0.1" placeholder="0,0">
       </div>
     </div>
 
@@ -217,17 +315,17 @@
     </div>
 
     <div class="form-row">
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="litros">Litros Abast.</label>
         <input type="number" id="litros" step="0.1" value="0">
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="kmHoras">Km/Horas</label>
         <input type="number" id="kmHoras" step="0.1" placeholder="0">
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="horasParag">Horas Parag.</label>
         <input type="number" id="horasParag" step="0.1" placeholder="0">
       </div>
@@ -247,25 +345,13 @@
       </div>
     </div>
 
-    <!-- Novo campo: H. Extra Trab. com o mesmo tamanho que Quant. Utilz. -->
     <div class="form-row">
-      <div class="form-group" style="flex: 2;">
-        <!-- Espaço reservado para manter alinhamento simétrico -->
-      </div>
-
       <div class="form-group" style="flex: 1;">
-        <label for="horasExtra">H. Extra Trab.</label>
-        <input type="number" id="horasExtra" step="0.1" placeholder="0,0">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
         <label for="producao">Produção Executada</label>
         <input type="number" id="producao" step="0.01" placeholder="0">
       </div>
 
-      <div class="form-group">
+      <div class="form-group" style="flex: 1;">
         <label for="unidade">Unidade</label>
         <select id="unidade">
           <option value="m">ml</option>
@@ -313,10 +399,32 @@
   const photoPreviewContainer =
     document.getElementById("photoPreviewContainer");
 
+  // Elementos do Seletor Personalizado da Equipa
+  const equipaApoioBox = document.getElementById("equipaApoioBox");
+  const equipaApoioTrigger = document.getElementById("equipaApoioTrigger");
+  const equipaApoioPopover = document.getElementById("equipaApoioPopover");
+  const equipaApoioPills = document.getElementById("equipaApoioPills");
+  const equipaApoioTexto = document.getElementById("equipaApoioTexto");
+
+  let equipaApoioSelecionada = [];
   let currentBase64Image = "";
   let statusTimer = null;
   let lastDropdownLoadAt = 0;
   let dropdownLoadPromise = null;
+
+  /**
+   * Gestão do Popover da Equipa Apoio
+   */
+  equipaApoioTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    equipaApoioPopover.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!equipaApoioBox.contains(e.target)) {
+      equipaApoioPopover.classList.remove("open");
+    }
+  });
 
   /**
    * Usa a data local do dispositivo sem conversão UTC.
@@ -399,7 +507,6 @@
 
   /**
    * Obtém as listas do Apps Script.
-   * Evita pedidos simultâneos e guarda os dados em cache.
    */
   async function loadDropdownData() {
     if (dropdownLoadPromise) {
@@ -486,12 +593,11 @@
   }
 
   /**
-   * Preenche todas las listas preservando as seleções atuais.
+   * Preenche todas as listas preservando as seleções atuais.
    */
   function populateSelects(data) {
     const ids = [
       "operador",
-      "equipaApoio",
       "obraID",
       "equipamentoID",
       "material"
@@ -500,12 +606,7 @@
     const valoresAnteriores = {};
 
     ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el.multiple) {
-        valoresAnteriores[id] = Array.from(el.selectedOptions).map(o => o.value);
-      } else {
-        valoresAnteriores[id] = el.value;
-      }
+      valoresAnteriores[id] = document.getElementById(id).value;
     });
 
     fillSelect(
@@ -514,11 +615,7 @@
       "Selecione o Operador..."
     );
 
-    fillSelect(
-      "equipaApoio",
-      data.operadores,
-      "Selecione os operadores de apoio..."
-    );
+    renderEquipaApoioPills(data.operadores);
 
     fillSelectObra(
       "obraID",
@@ -542,19 +639,63 @@
       const select = document.getElementById(id);
       const valorAnterior = valoresAnteriores[id];
 
-      if (select.multiple) {
-        Array.from(select.options).forEach(option => {
-          if (valorAnterior.includes(option.value)) {
-            option.selected = true;
-          }
-        });
-      } else {
-        const opcaoExiste = Array.from(select.options).some(
-          option => option.value === valorAnterior
-        );
-        select.value = opcaoExiste ? valorAnterior : "";
-      }
+      const opcaoExiste = Array.from(select.options).some(
+        option => option.value === valorAnterior
+      );
+      select.value = opcaoExiste ? valorAnterior : "";
     });
+  }
+
+  /**
+   * Renderiza os botões clicáveis (pills/bolinhas) para a Equipa Apoio
+   */
+  function renderEquipaApoioPills(operadores) {
+    equipaApoioPills.replaceChildren();
+
+    if (!Array.isArray(operadores)) return;
+
+    operadores.forEach(nome => {
+      const valor = String(nome || "").trim();
+      if (!valor) return;
+
+      const pill = document.createElement("div");
+      pill.className = "pill-item" + (equipaApoioSelecionada.includes(valor) ? " selected" : "");
+
+      const bullet = document.createElement("span");
+      bullet.className = "bullet";
+
+      const text = document.createElement("span");
+      text.textContent = valor;
+
+      pill.appendChild(bullet);
+      pill.appendChild(text);
+
+      pill.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (equipaApoioSelecionada.includes(valor)) {
+          equipaApoioSelecionada = equipaApoioSelecionada.filter(v => v !== valor);
+          pill.classList.remove("selected");
+        } else {
+          equipaApoioSelecionada.push(valor);
+          pill.classList.add("selected");
+        }
+        atualizarTextoEquipaApoio();
+      });
+
+      equipaApoioPills.appendChild(pill);
+    });
+
+    atualizarTextoEquipaApoio();
+  }
+
+  function atualizarTextoEquipaApoio() {
+    if (equipaApoioSelecionada.length === 0) {
+      equipaApoioTexto.textContent = "Selecione a equipa...";
+      equipaApoioTexto.style.color = "#6b7280";
+    } else {
+      equipaApoioTexto.textContent = equipaApoioSelecionada.join(", ");
+      equipaApoioTexto.style.color = "#111827";
+    }
   }
 
   /**
@@ -562,12 +703,9 @@
    */
   function fillSelect(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
-    const isMultiple = select.multiple;
     select.replaceChildren();
 
-    if (!isMultiple) {
-      addOption(select, "", defaultText);
-    }
+    addOption(select, "", defaultText);
 
     if (!Array.isArray(items)) return;
 
@@ -745,13 +883,10 @@
 
     if (!form.reportValidity()) return;
 
-    const equipaApoioSelect = document.getElementById("equipaApoio");
-    const equipaApoioValues = Array.from(equipaApoioSelect.selectedOptions).map(opt => opt.value).filter(Boolean);
-
     const payload = {
       Data: document.getElementById("data").value,
       Operador: document.getElementById("operador").value,
-      Equipa_Apoio: equipaApoioValues,
+      Equipa_Apoio: equipaApoioSelecionada,
       ObraID: document.getElementById("obraID").value,
       EquipamentoID: document.getElementById("equipamentoID").value,
 
@@ -939,6 +1074,13 @@
    */
   function resetForm() {
     form.reset();
+
+    equipaApoioSelecionada = [];
+    atualizarTextoEquipaApoio();
+    
+    // Atualiza a visualização dos pills
+    const pills = equipaApoioPills.querySelectorAll(".pill-item");
+    pills.forEach(p => p.classList.remove("selected"));
 
     currentBase64Image = "";
     fotoInput.value = "";
