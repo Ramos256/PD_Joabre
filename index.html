@@ -30,7 +30,7 @@
       color: #1f2937;
     }
 
-    /* --- SPLASH SCREEN --- */
+    /* --- SPLASH SCREEN LIMPO E GRANDE --- */
     #splashScreen {
       position: fixed;
       top: 0;
@@ -42,55 +42,27 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
-      transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+      z-index: 99999;
+      transition: opacity 0.5s ease-out;
     }
-    #splashScreen.fade-out {
-      opacity: 0;
-      visibility: hidden;
-    }
-    .splash-logo-container {
-      width: 90px;
-      height: 90px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 20px;
-      animation: pulseLogo 1.5s infinite ease-in-out;
-    }
-    .splash-logo-container img {
-      width: 100%;
-      height: 100%;
+    .splash-logo {
+      width: 130px;
+      height: 130px;
       object-fit: contain;
+      margin-bottom: 16px;
     }
     .splash-title {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: #111827;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      letter-spacing: 0.8px;
     }
     .splash-subtitle {
       font-size: 0.85rem;
       color: #6b7280;
-      margin-bottom: 24px;
+      margin-top: 4px;
     }
-    .splash-spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #e5e7eb;
-      border-top: 3px solid #2563eb;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    @keyframes pulseLogo {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.06); opacity: 0.85; }
-    }
+    /* ---------------------------------- */
 
     .card {
       background: white;
@@ -312,14 +284,11 @@
 
 <body>
 
-<!-- SPLASH SCREEN -->
+<!-- SPLASH SCREEN LIMPO COM ÍCONE GRANDE -->
 <div id="splashScreen">
-  <div class="splash-logo-container">
-    <img src="/PD_Joabre/icon_joabre.svg" alt="JOABRE Logo">
-  </div>
+  <img src="/PD_Joabre/icon_joabre.svg" alt="JOABRE Logo" class="splash-logo">
   <div class="splash-title">JOABRE</div>
   <div class="splash-subtitle">Parte Diária de Obra</div>
-  <div class="splash-spinner"></div>
 </div>
 
 <div class="card">
@@ -450,10 +419,6 @@
   const CACHE_KEY = "cached_dropdowns";
   const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-  // CONTROLO DE TEMPO DO SPLASH
-  const TEMPO_MINIMO_SPLASH = 1800; // 1.8 segundos
-  const inicioApp = Date.now();
-
   const form = document.getElementById("parteDiariaForm");
   const statusMsg = document.getElementById("statusMsg");
   const offlineBadge = document.getElementById("offlineBadge");
@@ -474,20 +439,15 @@
   let statusTimer = null;
   let lastDropdownLoadAt = 0;
   let dropdownLoadPromise = null;
-  let splashHidden = false;
 
-  function esconderSplash() {
-    if (splashHidden) return;
-    const tempoDecorrido = Date.now() - inicioApp;
-    const tempoRestante = Math.max(0, TEMPO_MINIMO_SPLASH - tempoDecorrido);
-
+  // Função estrita para esconder o splash com temporizador fixo de 2 segundos
+  function iniciarFechoSplash() {
     setTimeout(() => {
-      splashHidden = true;
-      splashScreen.classList.add("fade-out");
+      splashScreen.style.opacity = "0";
       setTimeout(() => {
         splashScreen.style.display = "none";
-      }, 400);
-    }, tempoRestante);
+      }, 500); // Tempo da transição fade-out
+    }, 2000); // Exatamente 2 segundos de ícone grande em ecrã inteiro
   }
 
   equipaApoioTrigger.addEventListener("click", (e) => {
@@ -589,7 +549,6 @@
         showStatus("Falha ao carregar as listas: " + err.message, "offline", true);
       } finally {
         dropdownLoadPromise = null;
-        esconderSplash();
       }
     })();
 
@@ -736,7 +695,6 @@
       const data = JSON.parse(cached);
       if (!listasValidas(data)) return false;
       populateSelects(data);
-      esconderSplash();
       return true;
     } catch (err) {
       return false;
@@ -878,15 +836,13 @@
     definirDataHoje();
   }
 
-  // Inicialização
+  // --- ARRANQUE DA APLICAÇÃO ---
   carregarListasDaCache();
   updateOnlineStatus();
   loadDropdownData();
 
-  // Força o fecho do Splash Screen após o tempo mínimo
-  setTimeout(() => {
-    esconderSplash();
-  }, TEMPO_MINIMO_SPLASH);
+  // Aciona os 2 segundos de ícone grande e entra logo no formulário
+  iniciarFechoSplash();
 </script>
 
 <script>
