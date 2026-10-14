@@ -12,7 +12,9 @@
   <title>Registo Parte Diária - Frota & Obras</title>
 
   <link rel="icon" type="image/svg+xml" href="/PD_Joabre/icon_joabre.svg">
+  <link rel="shortcut icon" type="image/svg+xml" href="/PD_Joabre/icon_joabre.svg">
   <link rel="apple-touch-icon" href="/PD_Joabre/icon_joabre.svg">
+  <meta name="msapplication-TileImage" content="/PD_Joabre/icon_joabre.svg">
   <link rel="manifest" href="/PD_Joabre/manifest.json">
 
   <style>
@@ -27,6 +29,69 @@
       padding: 12px 12px 60px 12px;
       color: #1f2937;
     }
+
+    /* --- SPLASH SCREEN PROFISSIONAL --- */
+    #splashScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+    }
+    #splashScreen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .splash-logo-container {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      animation: pulseLogo 1.5s infinite ease-in-out;
+    }
+    .splash-logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .splash-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .splash-subtitle {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .splash-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulseLogo {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.06); opacity: 0.85; }
+    }
+    /* ---------------------------------- */
 
     .card {
       background: white;
@@ -257,6 +322,17 @@
 </head>
 
 <body>
+
+<!-- SPLASH SCREEN DE APRESENTAÇÃO PROFISSIONAL -->
+<div id="splashScreen">
+  <div class="splash-logo-container">
+    <img src="/PD_Joabre/icon_joabre.svg" alt="JOABRE Logo">
+  </div>
+  <div class="splash-title">JOABRE</div>
+  <div class="splash-subtitle">Parte Diária de Obra</div>
+  <div class="splash-spinner"></div>
+</div>
+
 <div class="card">
   <h2>
     Parte Diária de Obra
@@ -398,6 +474,7 @@
   const photoPreview = document.getElementById("photoPreview");
   const photoPreviewContainer =
     document.getElementById("photoPreviewContainer");
+  const splashScreen = document.getElementById("splashScreen");
 
   // Elementos do Seletor Personalizado da Equipa
   const equipaApoioBox = document.getElementById("equipaApoioBox");
@@ -411,6 +488,16 @@
   let statusTimer = null;
   let lastDropdownLoadAt = 0;
   let dropdownLoadPromise = null;
+  let splashHidden = false;
+
+  function esconderSplash() {
+    if (splashHidden) return;
+    splashHidden = true;
+    splashScreen.classList.add("fade-out");
+    setTimeout(() => {
+      splashScreen.style.display = "none";
+    }, 400);
+  }
 
   /**
    * Gestão do Popover da Equipa Apoio
@@ -550,8 +637,6 @@
 
         lastDropdownLoadAt = Date.now();
 
-        console.log("Listas atualizadas.");
-
       } catch (err) {
         console.error("Erro ao carregar listas:", err);
 
@@ -586,6 +671,7 @@
 
       } finally {
         dropdownLoadPromise = null;
+        esconderSplash();
       }
     })();
 
@@ -830,6 +916,7 @@
       if (!listasValidas(data)) return false;
 
       populateSelects(data);
+      esconderSplash();
       return true;
 
     } catch (err) {
@@ -1078,7 +1165,6 @@
     equipaApoioSelecionada = [];
     atualizarTextoEquipaApoio();
     
-    // Atualiza a visualização dos pills
     const pills = equipaApoioPills.querySelectorAll(".pill-item");
     pills.forEach(p => p.classList.remove("selected"));
 
@@ -1092,11 +1178,16 @@
   }
 
   /**
-   * Inicialização.
+   * Inicialização com fallback de segurança para o Splash Screen.
    */
   carregarListasDaCache();
   updateOnlineStatus();
   loadDropdownData();
+
+  // Fallback: se por algum motivo a rede demorar muito, esconde o splash após 3.5 segundos
+  setTimeout(() => {
+    esconderSplash();
+  }, 3500);
 </script>
 
 <!-- Registo da aplicação offline/PWA -->
