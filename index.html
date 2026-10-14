@@ -192,6 +192,16 @@
       </div>
     </div>
 
+    <!-- Novo campo: Equipa Apoio com tamanho igual ao Material Aplicado / Utilizado -->
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label for="equipaApoio">Equipa Apoio (Múltipla seleção)</label>
+        <select id="equipaApoio" multiple style="height: 85px;">
+          <option value="">A carregar...</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-group">
       <label for="obraID">Obra (ObraID)</label>
       <select id="obraID" required>
@@ -237,6 +247,18 @@
       </div>
     </div>
 
+    <!-- Novo campo: H. Extra Trab. com o mesmo tamanho que Quant. Utilz. -->
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <!-- Espaço reservado para manter alinhamento simétrico -->
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label for="horasExtra">H. Extra Trab.</label>
+        <input type="number" id="horasExtra" step="0.1" placeholder="0,0">
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label for="producao">Produção Executada</label>
@@ -277,7 +299,7 @@
 
 <script>
   const WEBHOOK_URL =
-    "https://script.google.com/macros/s/AKfycbx32vBWrqWl1NIkPnSmWcAC2yEwZdTW6ehnwTPX46S2-80JqkJdRsDDnxrkjF-6aqZv1w/exec";
+    "https://script.google.com/macros/s/AKfycbwbTFSRWBBqwMb4Ph0y3qgEYAsMxpIrb1N3HCkKb0mOjsgMPgpmKgrXec2EbCgb_YZZxw/exec";
 
   const CACHE_KEY = "cached_dropdowns";
   const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
@@ -421,7 +443,6 @@
 
         lastDropdownLoadAt = Date.now();
 
-        // Não mostra estatísticas das listas.
         console.log("Listas atualizadas.");
 
       } catch (err) {
@@ -465,11 +486,12 @@
   }
 
   /**
-   * Preenche todas as listas preservando as seleções atuais.
+   * Preenche todas las listas preservando as seleções atuais.
    */
   function populateSelects(data) {
     const ids = [
       "operador",
+      "equipaApoio",
       "obraID",
       "equipamentoID",
       "material"
@@ -478,14 +500,24 @@
     const valoresAnteriores = {};
 
     ids.forEach(id => {
-      valoresAnteriores[id] =
-        document.getElementById(id).value;
+      const el = document.getElementById(id);
+      if (el.multiple) {
+        valoresAnteriores[id] = Array.from(el.selectedOptions).map(o => o.value);
+      } else {
+        valoresAnteriores[id] = el.value;
+      }
     });
 
     fillSelect(
       "operador",
       data.operadores,
       "Selecione o Operador..."
+    );
+
+    fillSelect(
+      "equipaApoio",
+      data.operadores,
+      "Selecione os operadores de apoio..."
     );
 
     fillSelectObra(
@@ -510,11 +542,18 @@
       const select = document.getElementById(id);
       const valorAnterior = valoresAnteriores[id];
 
-      const opcaoExiste = Array.from(select.options).some(
-        option => option.value === valorAnterior
-      );
-
-      select.value = opcaoExiste ? valorAnterior : "";
+      if (select.multiple) {
+        Array.from(select.options).forEach(option => {
+          if (valorAnterior.includes(option.value)) {
+            option.selected = true;
+          }
+        });
+      } else {
+        const opcaoExiste = Array.from(select.options).some(
+          option => option.value === valorAnterior
+        );
+        select.value = opcaoExiste ? valorAnterior : "";
+      }
     });
   }
 
@@ -523,9 +562,12 @@
    */
   function fillSelect(elementId, items, defaultText) {
     const select = document.getElementById(elementId);
+    const isMultiple = select.multiple;
     select.replaceChildren();
 
-    addOption(select, "", defaultText);
+    if (!isMultiple) {
+      addOption(select, "", defaultText);
+    }
 
     if (!Array.isArray(items)) return;
 
@@ -685,10 +727,6 @@
     showStatus("Sem ligação à Internet.", "offline");
   });
 
-  /**
-   * Ao regressar da câmara, só atualiza as listas se estiverem
-   * há pelo menos cinco minutos sem atualização bem-sucedida.
-   */
   document.addEventListener("visibilitychange", () => {
     if (
       !document.hidden &&
@@ -707,9 +745,13 @@
 
     if (!form.reportValidity()) return;
 
+    const equipaApoioSelect = document.getElementById("equipaApoio");
+    const equipaApoioValues = Array.from(equipaApoioSelect.selectedOptions).map(opt => opt.value).filter(Boolean);
+
     const payload = {
       Data: document.getElementById("data").value,
       Operador: document.getElementById("operador").value,
+      Equipa_Apoio: equipaApoioValues,
       ObraID: document.getElementById("obraID").value,
       EquipamentoID: document.getElementById("equipamentoID").value,
 
@@ -726,6 +768,9 @@
 
       Quant_Utilizada:
         parseFloat(document.getElementById("quantUtilz").value) || 0,
+
+      Horas_Extra:
+        parseFloat(document.getElementById("horasExtra").value) || 0,
 
       Produção:
         parseFloat(document.getElementById("producao").value) || 0,
