@@ -329,23 +329,21 @@
       </select>
     </div>
 
+    <div class="form-group">
+      <label for="equipamentoID">Equipamento / Viatura</label>
+      <select id="equipamentoID">
+        <option value="">Selecione (Opcional)...</option>
+      </select>
+    </div>
+
     <div class="form-row">
       <div class="form-group" style="flex: 1;">
         <label for="natObra">Nat. Obra</label>
         <select id="natObra">
-          <option value="">Selecione a Nat. Obra...</option>
+          <option value="">Selecione...</option>
         </select>
       </div>
 
-      <div class="form-group" style="flex: 1;">
-        <label for="equipamentoID">Equipamento / Viatura</label>
-        <select id="equipamentoID">
-          <option value="">Selecione (Opcional)...</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row">
       <div class="form-group" style="flex: 1;">
         <label for="kmHoras">Km/Horas</label>
         <input type="number" id="kmHoras" step="0.1" placeholder="0">
@@ -410,7 +408,7 @@
 </div>
 
 <script>
-  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx1zEBKVukN5l4_6t-p8uO5Zlz3rzk8gn5b7-cGh_u-qiLSJ5NWrA8ZNiW08JZUQ8t0Aw/exec";
+  const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwDtV3LXfIEdoggjNab06hTH14_ahO0dRPGV9bYEEAzeUHhYufS-ueWk5wir-ObzmWRfA/exec";
   const CACHE_KEY = "cached_dropdowns_v2";
 
   const form = document.getElementById("parteDiariaForm");
@@ -537,10 +535,10 @@
 
   function populateSelects(data) {
     fillSelect("operador", data.operadores, "Selecione o Operador...");
-    fillSelect("natObra", data.natObra, "Selecione a Nat. Obra...");
+    fillSelect("natObra", data.natObra, "Selecione...");
     renderEquipaApoioPills(data.equipaApoioLista);
     fillSelectObra("obraID", data.obras, "Selecione a Obra...");
-    fillSelectEquipamento("equipamentoID", data.equipamentos, "Selecione Equipamento (Opcional)...");
+    fillSelectEquipamento("equipamentoID", data.equipamentos, "Selecione (Opcional)...");
     fillSelectMaterial("material", data.materiais, "Selecione o Material (Opcional)...");
   }
 
