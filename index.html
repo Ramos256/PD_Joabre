@@ -30,7 +30,6 @@
       color: #1f2937;
     }
 
-    /* --- SPLASH SCREEN LIMPO E GRANDE --- */
     #splashScreen {
       position: fixed;
       top: 0;
@@ -62,7 +61,6 @@
       color: #6b7280;
       margin-top: 4px;
     }
-    /* ---------------------------------- */
 
     .card {
       background: white;
@@ -273,18 +271,11 @@
       border-radius: 8px;
       border: 1px solid #d1d5db;
     }
-
-    @media (max-width: 360px) {
-      .card { padding: 14px; }
-      .form-row { gap: 6px; }
-      input, select, textarea { padding: 8px; font-size: 0.88rem; }
-    }
   </style>
 </head>
 
 <body>
 
-<!-- SPLASH SCREEN LIMPO COM ÍCONE GRANDE -->
 <div id="splashScreen">
   <img src="/PD_Joabre/icon_joabre.svg" alt="JOABRE Logo" class="splash-logo">
   <div class="splash-title">JOABRE</div>
@@ -338,19 +329,23 @@
       </select>
     </div>
 
-    <div class="form-group">
-      <label for="equipamentoID">Equipamento / Viatura</label>
-      <select id="equipamentoID">
-        <option value="">Selecione o Equipamento (Opcional)...</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group" style="flex: 1;">
+        <label for="natObra">Nat. Obra</label>
+        <select id="natObra">
+          <option value="">Selecione a Nat. Obra...</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label for="equipamentoID">Equipamento / Viatura</label>
+        <select id="equipamentoID">
+          <option value="">Selecione (Opcional)...</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-row">
-      <div class="form-group" style="flex: 1;">
-        <label for="litros">Litros Abast.</label>
-        <input type="number" id="litros" step="0.1" value="0">
-      </div>
-
       <div class="form-group" style="flex: 1;">
         <label for="kmHoras">Km/Horas</label>
         <input type="number" id="kmHoras" step="0.1" placeholder="0">
@@ -416,8 +411,7 @@
 
 <script>
   const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx1zEBKVukN5l4_6t-p8uO5Zlz3rzk8gn5b7-cGh_u-qiLSJ5NWrA8ZNiW08JZUQ8t0Aw/exec";
-  const CACHE_KEY = "cached_dropdowns";
-  const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
+  const CACHE_KEY = "cached_dropdowns_v2";
 
   const form = document.getElementById("parteDiariaForm");
   const statusMsg = document.getElementById("statusMsg");
@@ -437,17 +431,13 @@
   let equipaApoioSelecionada = [];
   let currentBase64Image = "";
   let statusTimer = null;
-  let lastDropdownLoadAt = 0;
   let dropdownLoadPromise = null;
 
-  // Função estrita para esconder o splash com temporizador fixo de 2 segundos
   function iniciarFechoSplash() {
     setTimeout(() => {
       splashScreen.style.opacity = "0";
-      setTimeout(() => {
-        splashScreen.style.display = "none";
-      }, 500); // Tempo da transição fade-out
-    }, 2000); // Exatamente 2 segundos de ícone grande em ecrã inteiro
+      setTimeout(() => { splashScreen.style.display = "none"; }, 500);
+    }, 2000);
   }
 
   equipaApoioTrigger.addEventListener("click", (e) => {
@@ -488,19 +478,11 @@
       photoPreviewContainer.style.display = "none";
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      showStatus("Selecione um ficheiro de imagem válido.", "offline");
-      fotoInput.value = "";
-      return;
-    }
     const reader = new FileReader();
     reader.onload = function(evt) {
       currentBase64Image = evt.target.result;
       photoPreview.src = currentBase64Image;
       photoPreviewContainer.style.display = "block";
-    };
-    reader.onerror = function() {
-      showStatus("Não foi possível ler a fotografia.", "offline");
     };
     reader.readAsDataURL(file);
   });
@@ -509,6 +491,8 @@
     return Boolean(
       data &&
       Array.isArray(data.operadores) &&
+      Array.isArray(data.natObra) &&
+      Array.isArray(data.equipaApoioLista) &&
       Array.isArray(data.obras) &&
       Array.isArray(data.equipamentos) &&
       Array.isArray(data.materiais)
@@ -520,33 +504,29 @@
 
     dropdownLoadPromise = (async function() {
       try {
-        if (!navigator.onLine) throw new Error("O dispositivo está offline.");
+        if (!navigator.onLine) throw new Error("Offline");
         const url = WEBHOOK_URL + (WEBHOOK_URL.includes("?") ? "&" : "?") + "_=" + Date.now();
         const res = await fetch(url, { method: "GET", cache: "no-store", redirect: "follow" });
         if (!res.ok) throw new Error("Erro HTTP " + res.status);
         const data = await res.json();
-        if (data.result === "error") throw new Error(data.error || "Erro no Apps Script.");
-        if (!listasValidas(data)) throw new Error("A resposta do servidor não contém todas as listas.");
+        if (data.result === "error") throw new Error(data.error);
+        if (!listasValidas(data)) throw new Error("Listas incompletas.");
 
         localStorage.setItem(CACHE_KEY, JSON.stringify(data));
         populateSelects(data);
-        lastDropdownLoadAt = Date.now();
       } catch (err) {
-        console.error("Erro ao carregar listas:", err);
         try {
           const cached = localStorage.getItem(CACHE_KEY);
           if (cached) {
             const data = JSON.parse(cached);
             if (listasValidas(data)) {
               populateSelects(data);
-              showStatus("A utilizar dados guardados offline.", "offline", true);
+              showStatus("A utilizar dados offline.", "offline", true);
               return;
             }
           }
-        } catch (cacheError) {
-          console.error("Erro na cache das listas:", cacheError);
-        }
-        showStatus("Falha ao carregar as listas: " + err.message, "offline", true);
+        } catch (e) {}
+        showStatus("Erro ao atualizar listas: " + err.message, "offline", true);
       } finally {
         dropdownLoadPromise = null;
       }
@@ -556,29 +536,19 @@
   }
 
   function populateSelects(data) {
-    const ids = ["operador", "obraID", "equipamentoID", "material"];
-    const valoresAnteriores = {};
-    ids.forEach(id => { valoresAnteriores[id] = document.getElementById(id).value; });
-
     fillSelect("operador", data.operadores, "Selecione o Operador...");
-    renderEquipaApoioPills(data.operadores);
+    fillSelect("natObra", data.natObra, "Selecione a Nat. Obra...");
+    renderEquipaApoioPills(data.equipaApoioLista);
     fillSelectObra("obraID", data.obras, "Selecione a Obra...");
-    fillSelectEquipamento("equipamentoID", data.equipamentos, "Selecione o Equipamento (Opcional)...");
+    fillSelectEquipamento("equipamentoID", data.equipamentos, "Selecione Equipamento (Opcional)...");
     fillSelectMaterial("material", data.materiais, "Selecione o Material (Opcional)...");
-
-    ids.forEach(id => {
-      const select = document.getElementById(id);
-      const valorAnterior = valoresAnteriores[id];
-      const opcaoExiste = Array.from(select.options).some(option => option.value === valorAnterior);
-      select.value = opcaoExiste ? valorAnterior : "";
-    });
   }
 
-  function renderEquipaApoioPills(operadores) {
+  function renderEquipaApoioPills(listaEquipa) {
     equipaApoioPills.replaceChildren();
-    if (!Array.isArray(operadores)) return;
+    if (!Array.isArray(listaEquipa)) return;
 
-    operadores.forEach(nome => {
+    listaEquipa.forEach(nome => {
       const valor = String(nome || "").trim();
       if (!valor) return;
 
@@ -608,7 +578,6 @@
 
       equipaApoioPills.appendChild(pill);
     });
-
     atualizarTextoEquipaApoio();
   }
 
@@ -628,9 +597,7 @@
     addOption(select, "", defaultText);
     if (!Array.isArray(items)) return;
     items.forEach(value => {
-      if (value !== null && value !== undefined && String(value).trim() !== "") {
-        addOption(select, String(value), String(value));
-      }
+      if (value) addOption(select, String(value), String(value));
     });
   }
 
@@ -641,10 +608,8 @@
     if (!Array.isArray(items)) return;
     items.forEach(item => {
       const id = String(item.ObraID || item.ID || "").trim();
-      const nome = String(item.NomeObra || item.Nome || item.Obra || item.Descricao || "").trim();
-      if (id) {
-        addOption(select, id, nome ? id + " - " + nome : id);
-      }
+      const nome = String(item.NomeObra || item.Nome || "").trim();
+      if (id) addOption(select, id, nome ? id + " - " + nome : id);
     });
   }
 
@@ -656,10 +621,7 @@
     items.forEach(item => {
       const id = String(item.EquipamentoID || "").trim();
       const descricao = String(item["Descrição"] || item.Descricao || "").trim();
-      const matricula = String(item["Matrícula_Série"] || "").trim();
-      if (!id) return;
-      const texto = [descricao || id, matricula ? "(" + matricula + ")" : ""].filter(Boolean).join(" ");
-      addOption(select, id, texto);
+      if (id) addOption(select, id, descricao ? id + " - " + descricao : id);
     });
   }
 
@@ -669,15 +631,9 @@
     addOption(select, "", defaultText);
     if (!Array.isArray(items)) return;
     items.forEach(item => {
-      if (typeof item === "string") {
-        if (item.trim()) addOption(select, item, item);
-        return;
-      }
       const id = String(item.MateriaisID || "").trim();
       const descricao = String(item["Descrição"] || "").trim();
-      if (id && descricao) {
-        addOption(select, id, descricao);
-      }
+      if (id && descricao) addOption(select, id, descricao);
     });
   }
 
@@ -688,46 +644,6 @@
     select.appendChild(option);
   }
 
-  function carregarListasDaCache() {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (!cached) return false;
-      const data = JSON.parse(cached);
-      if (!listasValidas(data)) return false;
-      populateSelects(data);
-      return true;
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function updateOnlineStatus() {
-    if (navigator.onLine) {
-      offlineBadge.style.display = "none";
-      syncOfflineData();
-    } else {
-      offlineBadge.style.display = "inline-block";
-    }
-  }
-
-  window.addEventListener("online", function() {
-    updateOnlineStatus();
-    if (Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL) {
-      loadDropdownData();
-    }
-  });
-
-  window.addEventListener("offline", () => {
-    offlineBadge.style.display = "inline-block";
-    showStatus("Sem ligação à Internet.", "offline");
-  });
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && navigator.onLine && Date.now() - lastDropdownLoadAt >= CACHE_REFRESH_INTERVAL) {
-      loadDropdownData();
-    }
-  });
-
   form.addEventListener("submit", async function(e) {
     e.preventDefault();
     if (!form.reportValidity()) return;
@@ -737,8 +653,8 @@
       Operador: document.getElementById("operador").value,
       Equipa_Apoio: equipaApoioSelecionada,
       ObraID: document.getElementById("obraID").value,
+      Nat_Obra: document.getElementById("natObra").value,
       EquipamentoID: document.getElementById("equipamentoID").value,
-      Litros_Abast: parseFloat(document.getElementById("litros").value) || 0,
       Km_Horas: parseFloat(document.getElementById("kmHoras").value) || 0,
       Horas_Parag: parseFloat(document.getElementById("horasParag").value) || 0,
       MaterialID: document.getElementById("material").value,
@@ -755,80 +671,31 @@
     submitBtn.textContent = "A guardar...";
 
     try {
-      if (navigator.onLine) {
-        await sendData(payload);
-      } else {
-        saveOffline(payload);
-        showStatus("Guardado localmente sem rede. Será enviado quando houver ligação.", "offline");
-        resetForm();
-      }
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        redirect: "follow"
+      });
+      if (!response.ok) throw new Error("Erro HTTP " + response.status);
+      const result = await response.json();
+      if (result.result !== "success") throw new Error(result.error);
+      
+      showStatus("Parte diária inserida com sucesso! ID: " + result.id, "success");
+      resetForm();
     } catch (err) {
-      showStatus("Não foi possível guardar o registo. " + (err.message || ""), "offline", true);
+      showStatus("Erro ao guardar: " + err.message, "offline", true);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Guardar Parte Diária";
     }
   });
 
-  async function sendData(data, fromQueue = false) {
-    const response = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(data),
-      redirect: "follow"
-    });
-    if (!response.ok) throw new Error("Erro HTTP " + response.status);
-    const result = await response.json();
-    if (result.result !== "success") throw new Error(result.error || "O servidor não confirmou a gravação.");
-    if (!fromQueue) {
-      showStatus("Parte diária inserida com sucesso! ID: " + result.id, "success");
-      resetForm();
-    }
-    return result;
-  }
-
-  function saveOffline(data) {
-    const pendentes = JSON.parse(localStorage.getItem("partes_diarias_pendentes") || "[]");
-    pendentes.push({ ...data, _localId: Date.now() + "-" + Math.random().toString(36).slice(2) });
-    localStorage.setItem("partes_diarias_pendentes", JSON.stringify(pendentes));
-  }
-
-  let syncingOffline = false;
-  async function syncOfflineData() {
-    if (syncingOffline || !navigator.onLine) return;
-    syncingOffline = true;
-    try {
-      const pendentes = JSON.parse(localStorage.getItem("partes_diarias_pendentes") || "[]");
-      if (!pendentes.length) return;
-      const restantes = [];
-      let enviados = 0;
-      for (const item of pendentes) {
-        const data = { ...item };
-        delete data._localId;
-        try {
-          await sendData(data, true);
-          enviados++;
-        } catch (err) {
-          restantes.push(item);
-        }
-      }
-      localStorage.setItem("partes_diarias_pendentes", JSON.stringify(restantes));
-      if (enviados > 0 && restantes.length === 0) {
-        showStatus("Todos os registos offline foram sincronizados.", "success");
-      }
-    } catch (err) {
-      console.error("Erro offline:", err);
-    } finally {
-      syncingOffline = false;
-    }
-  }
-
   function resetForm() {
     form.reset();
     equipaApoioSelecionada = [];
     atualizarTextoEquipaApoio();
-    const pills = equipaApoioPills.querySelectorAll(".pill-item");
-    pills.forEach(p => p.classList.remove("selected"));
+    document.querySelectorAll(".pill-item").forEach(p => p.classList.remove("selected"));
     currentBase64Image = "";
     fotoInput.value = "";
     photoPreview.removeAttribute("src");
@@ -836,23 +703,14 @@
     definirDataHoje();
   }
 
-  // --- ARRANQUE DA APLICAÇÃO ---
-  carregarListasDaCache();
-  updateOnlineStatus();
+  // Inicialização
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) populateSelects(JSON.parse(cached));
+  } catch (e) {}
+  
   loadDropdownData();
-
-  // Aciona os 2 segundos de ícone grande e entra logo no formulário
   iniciarFechoSplash();
-</script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function() {
-      navigator.serviceWorker.register("/PD_Joabre/sw.js", { scope: "/PD_Joabre/" })
-        .then(function(registration) { console.log("JOABRE preparada:", registration.scope); })
-        .catch(function(error) { console.error("Erro PWA:", error); });
-    });
-  }
 </script>
 </body>
 </html>
